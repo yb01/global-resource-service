@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
+	"k8s.io/klog/v2"
 	"strconv"
 	"sync"
 
@@ -55,9 +56,9 @@ func (dis *ResourceDistributor) RegisterClient(requestedHostNum int) (string, bo
 	clientId := uuid.New().String()
 	result, err := dis.allocateNodesToClient(clientId, requestedHostNum)
 	if err != nil {
-		fmt.Printf("Error register client. Error %v\n", err)
+		klog.Errorf("Error register client. Error %v\n", err)
 	}
-	fmt.Printf("Registered client id: %s\n", clientId)
+	klog.Errorf("Registered client id: %s\n", clientId)
 	return clientId, result, err
 }
 
