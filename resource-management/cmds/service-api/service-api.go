@@ -13,8 +13,10 @@ import (
 func main() {
 	flag.Usage = printUsage
 
-	klog.InitFlags(nil)
-	flag.Parse()
+	if !flag.Parsed() {
+		klog.InitFlags(nil)
+		flag.Parse()
+	}
 
 	// keep a more frequent flush frequency as 1 second
 	klog.StartFlushDaemon(time.Second * 1)
