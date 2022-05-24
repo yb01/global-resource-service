@@ -17,7 +17,7 @@ func main() {
 	// get the commandline arguments
 	c := &app.Config{}
 
-    var urls string
+	var urls string
 	flag.StringVar(&c.MasterIp, "master_ip", "localhost", "Service IP address, if not set, default to localhost")
 	flag.StringVar(&c.MasterPort, "master_port", "8080", "Service port, if not set, default to 8080")
 	flag.StringVar(&urls, "resource_urls", "", "Resource urls of the resource manager services in each region")
@@ -25,6 +25,11 @@ func main() {
 	if !flag.Parsed() {
 		klog.InitFlags(nil)
 		flag.Parse()
+	}
+
+	if urls == "" {
+		klog.Errorf("resource_urls is missing or with invalid values")
+		os.Exit(1)
 	}
 
 	c.ResourceUrls = strings.Split(urls, ",")
@@ -52,7 +57,7 @@ func printUsage() {
 	// klog will use commandline log parameters with nil as named a few below:
 	// --alsologtostderr=true  --logtostderr=false --log_file="/tmp/grs.log"
 	fmt.Println("logging options: --alsologtostderr=true  --logtostderr=false --log_file=/tmp/grs.log ")
-	fmt.Println("service config options: --master_ip=<ip address>  --master_port=<port>")
+	fmt.Println("service config options: --master_ip=<ip address>  --master_port=<port> --resource_urls=<url1,url2,...>")
 
 	os.Exit(0)
 }
