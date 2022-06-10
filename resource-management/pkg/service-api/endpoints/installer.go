@@ -1,7 +1,6 @@
 package endpoints
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
 	"io/ioutil"
@@ -9,7 +8,9 @@ import (
 	"net/http"
 
 	di "global-resource-service/resource-management/pkg/common-lib/interfaces/distributor"
-	store "global-resource-service/resource-management/pkg/common-lib/interfaces/store"
+	"global-resource-service/resource-management/pkg/common-lib/interfaces/store"
+	"global-resource-service/resource-management/pkg/common-lib/serializer"
+	"global-resource-service/resource-management/pkg/common-lib/serializer/json"
 	"global-resource-service/resource-management/pkg/common-lib/types"
 	"global-resource-service/resource-management/pkg/common-lib/types/event"
 	apiTypes "global-resource-service/resource-management/pkg/service-api/types"
@@ -17,21 +18,33 @@ import (
 
 type Installer struct {
 	dist di.Interface
+	js   serializer.Serializer
+	ps   serializer.Serializer
 }
 
 func NewInstaller(d di.Interface) *Installer {
-	return &Installer{d}
+	s := json.NewSerializer("placeHolder", false)
+	return &Installer{d, s, s}
 }
 
 func (i *Installer) ClientAdministrationHandler(resp http.ResponseWriter, req *http.Request) {
 	klog.V(3).Infof("handle /client. URL path: %s", req.URL.Path)
 
+	// TODO: consider to add multiple handler for different serializer request, could avoid a bit perf impact for this set
+	var desiredSerializer serializer.Serializer
+	content := req.Header.Get("Content-Type")
+	if content == "application/json" {
+		desiredSerializer = i.js
+	} else {
+		desiredSerializer = i.ps
+	}
+
 	switch req.Method {
 	case http.MethodPost:
-		i.handleClientRegistration(resp, req)
+		i.handleClientRegistration(resp, req, desiredSerializer)
 		return
 	case http.MethodDelete:
-		i.handleClientUnRegistration(resp, req)
+		i.handleClientUnRegistration(resp, req, desiredSerializer)
 		return
 	default:
 		resp.WriteHeader(http.StatusMethodNotAllowed)
@@ -41,7 +54,7 @@ func (i *Installer) ClientAdministrationHandler(resp http.ResponseWriter, req *h
 }
 
 // TODO: error handling function
-func (i *Installer) handleClientRegistration(resp http.ResponseWriter, req *http.Request) {
+func (i *Installer) handleClientRegistration(resp http.ResponseWriter, req *http.Request, desiredSerializer serializer.Serializer) {
 	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		klog.V(3).Infof("error read request. error %v", err)
@@ -51,12 +64,13 @@ func (i *Installer) handleClientRegistration(resp http.ResponseWriter, req *http
 
 	clientReq := apiTypes.ClientRegistrationRequest{}
 
-	err = json.Unmarshal(body, &clientReq)
+	r, err := desiredSerializer.Decode(body, clientReq)
 	if err != nil {
 		klog.V(3).Infof("error unmarshal request body. error %v", err)
 		resp.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	clientReq = r.(apiTypes.ClientRegistrationRequest)
 
 	requestedMachines := clientReq.InitialRequestedResource.TotalMachines
 	if requestedMachines > types.MaxTotalMachinesPerRequest || requestedMachines < types.MinTotalMachinesPerRequest {
@@ -80,14 +94,7 @@ func (i *Installer) handleClientRegistration(resp http.ResponseWriter, req *http
 	// for 630, request of initial resource request with client registration is either denied or granted in full
 	ret := apiTypes.ClientRegistrationResponse{ClientId: client.ClientId, GrantedResource: client.Resource}
 
-	b, err := json.Marshal(ret)
-	if err != nil {
-		klog.V(3).Infof("error marshal client response. error %v", err)
-		resp.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	_, err = resp.Write(b)
+	err = desiredSerializer.Encode(ret, resp)
 	if err != nil {
 		klog.V(3).Infof("error write response. error %v", err)
 		resp.WriteHeader(http.StatusInternalServerError)
@@ -97,7 +104,7 @@ func (i *Installer) handleClientRegistration(resp http.ResponseWriter, req *http
 	return
 }
 
-func (i *Installer) handleClientUnRegistration(resp http.ResponseWriter, req *http.Request) {
+func (i *Installer) handleClientUnRegistration(resp http.ResponseWriter, req *http.Request, desiredSerializer serializer.Serializer) {
 	klog.V(3).Infof("not implemented")
 	resp.WriteHeader(http.StatusNotImplemented)
 	return
@@ -106,16 +113,24 @@ func (i *Installer) handleClientUnRegistration(resp http.ResponseWriter, req *ht
 func (i *Installer) ResourceHandler(resp http.ResponseWriter, req *http.Request) {
 	klog.V(3).Infof("handle /resource. URL path: %s", req.URL.Path)
 
+	// TODO: consider to add multiple handler for different serializer request, could avoid a bit perf impact for this set
+	var desiredSerializer serializer.Serializer
+	content := req.Header.Get("Content-Type")
+	if content == "application/json" {
+		desiredSerializer = i.js
+	} else {
+		desiredSerializer = i.ps
+	}
+
 	switch req.Method {
 	case http.MethodGet:
 		ctx := req.Context()
 		clientId := ctx.Value("clientid").(string)
 
 		if req.URL.Query().Get(WatchParameter) == WatchParameterTrue {
-			i.serverWatch(resp, req, clientId)
+			i.serverWatch(resp, req, clientId, desiredSerializer)
 			return
 		}
-
 		resp.WriteHeader(http.StatusOK)
 		resp.Header().Set("Content-Type", "text/plain")
 
@@ -125,7 +140,7 @@ func (i *Installer) ResourceHandler(resp http.ResponseWriter, req *http.Request)
 			resp.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		i.handleResponseTrunked(resp, nodes)
+		i.handleResponseTrunked(resp, nodes, desiredSerializer)
 	case http.MethodPut:
 		resp.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -141,7 +156,7 @@ func (i *Installer) ResourceHandler(resp http.ResponseWriter, req *http.Request)
 // TODO: with serialization options
 // TODO: error code and string definition
 //
-func (i *Installer) serverWatch(resp http.ResponseWriter, req *http.Request, clientId string) {
+func (i *Installer) serverWatch(resp http.ResponseWriter, req *http.Request, clientId string, desiredSerializer serializer.Serializer) {
 	klog.V(3).Infof("Serving watch for client: %s", clientId)
 
 	// For 630 distributor impl, watchChannel and stopChannel passed into the Watch routine from API layer
@@ -152,7 +167,7 @@ func (i *Installer) serverWatch(resp http.ResponseWriter, req *http.Request, cli
 	defer stopWatch(stopCh)
 
 	// read request body and get the crv
-	crvMap, err := getResourceVersionsMap(req)
+	crvMap, err := getResourceVersionsMap(req, desiredSerializer)
 	if err != nil {
 		klog.Errorf("uUable to get the resource versions. Error %v", err)
 		resp.WriteHeader(http.StatusInternalServerError)
@@ -191,7 +206,8 @@ func (i *Installer) serverWatch(resp http.ResponseWriter, req *http.Request, cli
 				return
 			}
 
-			if err := json.NewEncoder(resp).Encode(*record.Node); err != nil {
+			if err := desiredSerializer.Encode(*record.Node, resp); err != nil {
+				//	if err := json.NewEncoder(resp).Encode(*record.Node); err != nil {
 				klog.V(3).Infof("encoding record failed. error %v", err)
 				resp.WriteHeader(http.StatusInternalServerError)
 				return
@@ -208,7 +224,7 @@ func stopWatch(stopCh chan struct{}) {
 	stopCh <- struct{}{}
 }
 
-func getResourceVersionsMap(req *http.Request) (types.ResourceVersionMap, error) {
+func getResourceVersionsMap(req *http.Request, s serializer.Serializer) (types.ResourceVersionMap, error) {
 	body, err := ioutil.ReadAll(req.Body)
 
 	if err != nil {
@@ -217,30 +233,30 @@ func getResourceVersionsMap(req *http.Request) (types.ResourceVersionMap, error)
 
 	wr := apiTypes.WatchRequest{}
 
-	err = json.Unmarshal(body, wr)
+	r, err := s.Decode(body, wr)
+	//err = json.Unmarshal(body, wr)
 	if err != nil {
 		return nil, err
 	}
+	wr = r.(apiTypes.WatchRequest)
 
 	return wr.ResourceVersions, nil
 }
 
-func (i *Installer) handleResponseTrunked(resp http.ResponseWriter, nodes []*types.LogicalNode) {
+func (i *Installer) handleResponseTrunked(resp http.ResponseWriter, nodes []*types.LogicalNode, desiredSerializer serializer.Serializer) {
 	var nodesLen = len(nodes)
 	if nodesLen <= ResponseTrunkSize {
-		ret, err := json.Marshal(nodes)
+		err := desiredSerializer.Encode(nodes, resp)
 		if err != nil {
 			klog.Errorf("error read get node list. error %v", err)
 			resp.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		resp.Write(ret)
 	} else {
 		flusher, ok := resp.(http.Flusher)
 		if !ok {
 			klog.Errorf("expected http.ResponseWriter to be an http.Flusher")
 		}
-
 		resp.Header().Set("Connection", "Keep-Alive")
 		resp.Header().Set("X-Content-Type-Options", "nosniff")
 		//TODO: handle network disconnect or similar cases.
@@ -253,14 +269,12 @@ func (i *Installer) handleResponseTrunked(resp http.ResponseWriter, nodes []*typ
 			} else {
 				chunkedNodes = nodes[start:nodesLen]
 			}
-
-			ret, err := json.Marshal(chunkedNodes)
+			err := desiredSerializer.Encode(chunkedNodes, resp)
 			if err != nil {
 				klog.Errorf("error read get node list. error %v", err)
 				resp.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			resp.Write(ret)
 			flusher.Flush()
 			start = end
 		}

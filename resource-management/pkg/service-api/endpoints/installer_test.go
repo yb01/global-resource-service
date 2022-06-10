@@ -74,7 +74,7 @@ func TestHttpGet(t *testing.T) {
 	distributor.ProcessEvents(eventsAdd)
 
 	//register client
-	client := types.Client{ClientId: "12345", Resource: types.ResourceRequest{TotalMachines: 500}, ClientInfo: types.ClientInfoType{}}
+	client := types.Client{ClientId: "12345", Resource: types.ResourceRequest{TotalMachines: 5000}, ClientInfo: types.ClientInfoType{}}
 
 	err := distributor.RegisterClient(&client)
 	clientId := client.ClientId
@@ -103,17 +103,28 @@ func TestHttpGet(t *testing.T) {
 
 	dec := json.NewDecoder(recorder.Body)
 
+	chunks := 0
+	expectedChunks := 10
 	for dec.More() {
 		err := dec.Decode(&decNodes)
 		if err != nil {
 			klog.Errorf("decode nodes error: %v\n", err)
 		}
 
+		chunks++
+		klog.Infof("decNode length: %v", len(decNodes))
 		actualNodes = append(actualNodes, decNodes...)
 	}
 
+	klog.Infof("total nodes length: %v", len(actualNodes))
+
 	assert.Equal(t, http.StatusOK, recorder.Code)
 	assert.Equal(t, len(expectedNodes), len(actualNodes))
+
+	// expectedChunks +/- 1 as the range of the expected node length can vary a bit in 630
+	if chunks < expectedChunks-1 || chunks > expectedChunks+1 {
+		t.Fatal("Pagination page count is not correct")
+	}
 
 	// Node list is not ordered, so have to do a one by one comparison
 	for _, n := range expectedNodes {
