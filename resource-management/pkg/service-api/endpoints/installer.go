@@ -207,7 +207,6 @@ func (i *Installer) serverWatch(resp http.ResponseWriter, req *http.Request, cli
 			}
 
 			if err := desiredSerializer.Encode(*record.Node, resp); err != nil {
-				//	if err := json.NewEncoder(resp).Encode(*record.Node); err != nil {
 				klog.V(3).Infof("encoding record failed. error %v", err)
 				resp.WriteHeader(http.StatusInternalServerError)
 				return
@@ -234,7 +233,6 @@ func getResourceVersionsMap(req *http.Request, s serializer.Serializer) (types.R
 	wr := apiTypes.WatchRequest{}
 
 	r, err := s.Decode(body, wr)
-	//err = json.Unmarshal(body, wr)
 	if err != nil {
 		return nil, err
 	}

@@ -74,7 +74,7 @@ func TestHttpGet(t *testing.T) {
 	distributor.SetPersistHelper(fakeStorage)
 	installer := NewInstaller(distributor)
 
-	// initialize node store with 10K nodes
+	// initialize node store with 1m nodes
 	eventsAdd := generateAddNodeEvent(1000000)
 
 	klog.Infof("start process [%v] events: %v", len(eventsAdd), time.Now().String())
@@ -115,7 +115,7 @@ func TestHttpGet(t *testing.T) {
 	dec := json.NewDecoder(recorder.Body)
 
 	chunks := 0
-	expectedChunks := requestMachines / 500
+	expectedChunks := requestMachines / 500     // default chunk size is 500
 	for dec.More() {
 		err := dec.Decode(&decNodes)
 		if err != nil {
