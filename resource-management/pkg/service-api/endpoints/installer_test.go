@@ -3,11 +3,13 @@ package endpoints
 import (
 	"context"
 	"encoding/json"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"sync"
 	"testing"
+	"time"
 
 	"k8s.io/klog/v2"
 
@@ -38,12 +40,15 @@ func tearDown(resourceDistributor *distributor.ResourceDistributor) {
 func createRandomNode(rv int) *types.LogicalNode {
 	id := uuid.New()
 
+	r := types.RegionName(rand.Intn(5))
+	rp := types.ResourcePartitionName(rand.Intn(10))
+
 	return &types.LogicalNode{
 		Id:              id.String(),
 		ResourceVersion: strconv.Itoa(rv),
 		GeoInfo: types.NodeGeoInfo{
-			Region:            0,
-			ResourcePartition: 0,
+			Region:            r,
+			ResourcePartition: rp,
 		},
 	}
 }
@@ -70,11 +75,16 @@ func TestHttpGet(t *testing.T) {
 	installer := NewInstaller(distributor)
 
 	// initialize node store with 10K nodes
-	eventsAdd := generateAddNodeEvent(10000)
+	eventsAdd := generateAddNodeEvent(1000000)
+
+	klog.Infof("start process [%v] events: %v", len(eventsAdd), time.Now().String())
 	distributor.ProcessEvents(eventsAdd)
+	klog.Infof("end process [%v] events:   %v", len(eventsAdd), time.Now().String())
+
+	requestMachines := 25000
 
 	//register client
-	client := types.Client{ClientId: "12345", Resource: types.ResourceRequest{TotalMachines: 5000}, ClientInfo: types.ClientInfoType{}}
+	client := types.Client{ClientId: "12345", Resource: types.ResourceRequest{TotalMachines: requestMachines}, ClientInfo: types.ClientInfoType{}}
 
 	err := distributor.RegisterClient(&client)
 	clientId := client.ClientId
@@ -92,6 +102,7 @@ func TestHttpGet(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	klog.Infof("start list [%v] events: %v", len(expectedNodes), time.Now().String())
 	recorder := httptest.NewRecorder()
 
 	ctx := context.WithValue(req.Context(), "clientid", clientId)
@@ -104,7 +115,7 @@ func TestHttpGet(t *testing.T) {
 	dec := json.NewDecoder(recorder.Body)
 
 	chunks := 0
-	expectedChunks := 10
+	expectedChunks := requestMachines / 500
 	for dec.More() {
 		err := dec.Decode(&decNodes)
 		if err != nil {
@@ -112,10 +123,9 @@ func TestHttpGet(t *testing.T) {
 		}
 
 		chunks++
-		klog.Infof("decNode length: %v", len(decNodes))
 		actualNodes = append(actualNodes, decNodes...)
 	}
-
+	klog.Infof("end list [%v] events:   %v", len(expectedNodes), time.Now().String())
 	klog.Infof("total nodes length: %v", len(actualNodes))
 
 	assert.Equal(t, http.StatusOK, recorder.Code)
