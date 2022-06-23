@@ -107,6 +107,12 @@ func (re *RegionNodeEventHandler) SimulatorHandler(rw http.ResponseWriter, r *ht
 	} else if r.URL.Path == PostCRVPath {
 		var postCRV simulatorTypes.PostCRVstatus = true
 
+		klog.V(9).Infof("debug: CRV is %v", aggregatorClientReq.CRV)
+
+		for k, v := range aggregatorClientReq.CRV {
+			klog.V(9).Infof("debug: RV in map, key: %v-%v, value: %v", k.GetRegion(), k.GetResourcePartition(), v)
+		}
+
 		// Serialize boolean result to JSON
 		err = postCRV.ToJSON(rw)
 

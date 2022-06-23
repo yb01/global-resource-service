@@ -8,14 +8,14 @@ import (
 const RingRange = float64(360)
 
 type Location struct {
-	region    Region
-	partition ResourcePartition
+	Region    Region
+	Partition ResourcePartition
 }
 
 func NewLocation(region Region, partition ResourcePartition) *Location {
 	return &Location{
-		region:    region,
-		partition: partition,
+		Region:    region,
+		Partition: partition,
 	}
 }
 
@@ -208,8 +208,8 @@ func init() {
 		for j := 0; j < len(rps); j++ {
 			rp := rps[j]
 			loc := Location{
-				region:    region,
-				partition: rp,
+				Region:    region,
+				Partition: rp,
 			}
 			if j == len(rps)-1 {
 				if i == len(Regions)-1 {
@@ -247,11 +247,11 @@ func GetRPsForRegion(region Region) []ResourcePartition {
 }
 
 func (loc *Location) GetRegion() Region {
-	return loc.region
+	return loc.Region
 }
 
 func (loc *Location) GetResourcePartition() ResourcePartition {
-	return loc.partition
+	return loc.Partition
 }
 
 func (loc *Location) GetArcRangeFromLocation() (float64, float64) {
@@ -260,11 +260,11 @@ func (loc *Location) GetArcRangeFromLocation() (float64, float64) {
 }
 
 func (loc *Location) Equal(locToCompare Location) bool {
-	return loc.region == locToCompare.region && loc.partition == locToCompare.partition
+	return loc.Region == locToCompare.Region && loc.Partition == locToCompare.Partition
 }
 
 func (loc *Location) String() string {
-	return fmt.Sprintf("[Region %s, ResoucePartition %s]", loc.region, loc.partition)
+	return fmt.Sprintf("[Region %s, ResoucePartition %s]", loc.Region, loc.Partition)
 }
 
 func (loc Location) MarshalText() (text []byte, err error) {

@@ -25,12 +25,12 @@ func TestLocationInit(t *testing.T) {
 		for j := 0; j < len(rps); j++ {
 			rp := rps[j]
 			loc := Location{
-				region:    region,
-				partition: rp,
+				Region:    region,
+				Partition: rp,
 			}
 			lower, upper := loc.GetArcRangeFromLocation()
 			if preLower >= lower || preUpper >= upper || lower < 0 || upper > RingRange || (preUpper > 0 && preUpper != lower) {
-				assert.Fail(t, "Invalid ranges for region/resource paritions", "RP %s has unexpected hash range (%f, %f]\n\n", loc.partition, lower, upper)
+				assert.Fail(t, "Invalid ranges for region/resource paritions", "RP %s has unexpected hash range (%f, %f]\n\n", loc.Partition, lower, upper)
 				t.Log("All hash range listed as follows:\n")
 				printLocationRange(t)
 				assert.Fail(t, "")
@@ -51,8 +51,8 @@ func printLocationRange(t *testing.T) {
 		for j := 0; j < len(rps); j++ {
 			rp := rps[j]
 			loc := Location{
-				region:    region,
-				partition: rp,
+				Region:    region,
+				Partition: rp,
 			}
 			lower, upper := loc.GetArcRangeFromLocation()
 			t.Logf("%s, %s, [%f, %f]\n", region, rp, lower, upper)
@@ -129,8 +129,8 @@ func TestGetLocationRangeByObject_Performance(t *testing.T) {
 		for j := 0; j < len(ResourcePartitions); j++ {
 			pos := i*len(ResourcePartitions) + j
 			locations[pos] = Location{
-				region:    Regions[i],
-				partition: ResourcePartitions[j],
+				Region:    Regions[i],
+				Partition: ResourcePartitions[j],
 			}
 		}
 	}

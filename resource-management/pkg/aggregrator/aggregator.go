@@ -179,8 +179,19 @@ func (a *Aggregator) initPullOrSubsequentPull(c *ClientOfRRM, batchLength uint64
 // error indicate failed POST, CRV means Composite Resource Version
 //
 func (a *Aggregator) postCRV(c *ClientOfRRM, crv types.ResourceVersionMap) error {
+
+	klog.V(9).Infof("debug: CRV is %v", crv)
+
+	for k, v := range crv {
+		klog.V(9).Infof("debug: RV in map, key: %v-%v, value: %v", k.GetRegion(), k.GetResourcePartition(), v)
+	}
+
 	path := httpPrefix + c.BaseURL + "/resources/crv"
-	bytes, _ := json.Marshal(PullDataFromRRM{CRV: crv.Copy()})
+	bytes, err := json.Marshal(PullDataFromRRM{CRV: crv.Copy()})
+	if err != nil {
+		klog.Errorf("error marshall postCRV request. error %v", err)
+	}
+
 	req, err := http.NewRequest(http.MethodPost, path, strings.NewReader((string(bytes))))
 
 	if err != nil {
