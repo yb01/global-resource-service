@@ -71,6 +71,11 @@ func (a *Aggregator) Run() (err error) {
 
 	for i := 0; i < numberOfURLs; i++ {
 		go func(i int) {
+			klog.V(3).Infof("Starting goroutine for region: %v", a.urls[i])
+			defer func() {
+			   klog.V(3).Infof("Existing goroutine for region: %v", a.urls[i])
+			}()
+
 			var crv types.ResourceVersionMap
 			var regionNodeEvents [][]*event.NodeEvent
 			var length uint64
@@ -79,7 +84,9 @@ func (a *Aggregator) Run() (err error) {
 			// Connect to resource region manager
 			c := a.createClient(a.urls[i])
 
+			klog.V(3).Infof("Starting loop pulling nodes from region: %v", a.urls[i])
 			for {
+				klog.V(9).Infof("Wait for 100 milisecond...")
 				time.Sleep(100 * time.Millisecond)
 
 				// Call the Pull methods
@@ -103,6 +110,7 @@ func (a *Aggregator) Run() (err error) {
 					//       The performance tested in development Mac is not good
 					eventProcess, crv = a.EventProcessor.ProcessEvents(minRecordNodeEvents)
 
+					klog.V(3).Infof("Processed nodes : results : %v", eventProcess )
 					if eventProcess {
 						a.postCRV(c, crv)
 					}
@@ -131,7 +139,6 @@ func (a *Aggregator) createClient(url string) *ClientOfRRM {
 // Call the resource region manager's SubsequentPull method {url}/resources/subsequentpull when crv is not nil
 //
 func (a *Aggregator) initPullOrSubsequentPull(c *ClientOfRRM, batchLength uint64, crv types.ResourceVersionMap) ([][]*event.NodeEvent, uint64) {
-	klog.V(9).Infof("Pulling nodes from region managers")
 	var path string
 
 	if len(crv) == 0 {
@@ -142,8 +149,8 @@ func (a *Aggregator) initPullOrSubsequentPull(c *ClientOfRRM, batchLength uint64
 
 	fmt.Println(crv)
 
-	klog.Info("Sleeping 15 seconds")
-	time.Sleep(time.Second * 15)
+	//klog.Info("Sleeping 15 seconds")
+	//time.Sleep(time.Second * 15)
 
 	bytes, _ := json.Marshal(PullDataFromRRM{BatchLength: batchLength, CRV: crv.Copy()})
 	req, err := http.NewRequest(http.MethodGet, path, strings.NewReader((string(bytes))))
@@ -180,19 +187,8 @@ func (a *Aggregator) initPullOrSubsequentPull(c *ClientOfRRM, batchLength uint64
 // error indicate failed POST, CRV means Composite Resource Version
 //
 func (a *Aggregator) postCRV(c *ClientOfRRM, crv types.ResourceVersionMap) error {
-
-	klog.V(9).Infof("debug: CRV is %v", crv)
-
-	for k, v := range crv {
-		klog.V(9).Infof("debug: RV in map, key: %v-%v, value: %v", k.GetRegion(), k.GetResourcePartition(), v)
-	}
-
 	path := httpPrefix + c.BaseURL + "/resources/crv"
-	bytes, err := json.Marshal(PullDataFromRRM{CRV: crv.Copy()})
-	if err != nil {
-		klog.Errorf("error marshall postCRV request. error %v", err)
-	}
-
+	bytes, _ := json.Marshal(PullDataFromRRM{CRV: crv.Copy()})
 	req, err := http.NewRequest(http.MethodPost, path, strings.NewReader((string(bytes))))
 
 	if err != nil {
