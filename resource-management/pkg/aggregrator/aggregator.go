@@ -131,6 +131,7 @@ func (a *Aggregator) createClient(url string) *ClientOfRRM {
 // Call the resource region manager's SubsequentPull method {url}/resources/subsequentpull when crv is not nil
 //
 func (a *Aggregator) initPullOrSubsequentPull(c *ClientOfRRM, batchLength uint64, crv types.ResourceVersionMap) ([][]*event.NodeEvent, uint64) {
+	klog.V(9).Infof("Pulling nodes from region managers")
 	var path string
 
 	if len(crv) == 0 {
