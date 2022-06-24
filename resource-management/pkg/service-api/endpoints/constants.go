@@ -6,7 +6,7 @@ const (
 
 	//RegionlessResourcePath is the default api service url
 	RegionlessResourcePath = "/resource"
-	ListWatchResourcePath       = RegionlessResourcePath + "/{clientid}"
+	ListWatchResourcePath  = RegionlessResourcePath + "/{clientid}"
 	UpdateResourcePath     = RegionlessResourcePath + "/{clientid}" + "/addResource"
 	ReduceResourcePath     = RegionlessResourcePath + "/{clientid}" + "/reduceResource"
 	// InsecureServiceAPIPort is the default port for Service-api when running insecure mode.
