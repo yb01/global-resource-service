@@ -29,8 +29,8 @@ func (c *DistributorPersistHelper) SetWaitCount(count int) {
 }
 
 func (c *DistributorPersistHelper) PersistNode(newNode *types.LogicalNode) {
+	c.persistNodeWaitGroup.Add(1)
 	go func(persistHelper store.StoreInterface, node *types.LogicalNode, wg *sync.WaitGroup) {
-		wg.Add(1)
 		defer wg.Done()
 		for {
 			result := persistHelper.PersistNodes([]*types.LogicalNode{newNode})
