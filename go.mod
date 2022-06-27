@@ -10,6 +10,7 @@ require (
 	github.com/stretchr/testify v1.7.1
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd
 	golang.org/x/time v0.0.0-20220609170525-579cf78fd858
+	golang.org/x/tools v0.1.11
 	k8s.io/apimachinery v0.24.2
 	k8s.io/klog v1.0.0
 	k8s.io/klog/v2 v2.60.1
