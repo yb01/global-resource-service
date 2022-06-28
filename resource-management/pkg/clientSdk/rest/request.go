@@ -406,7 +406,6 @@ func (r *Request) Watch() (watch.Interface, error) {
 	), nil
 }
 
-
 // Stream formats and executes the request, and offers streaming of the response.
 // Returns io.ReadCloser which could be used for streaming of the response, or an error
 // Any non-2xx http status code causes an error.  If we get a non-2xx code, we try to convert the body into an APIStatus object.
@@ -620,13 +619,13 @@ func truncateBody(body string) string {
 // whether the body is printable.
 func glogBody(prefix string, body []byte) {
 
-		if bytes.IndexFunc(body, func(r rune) bool {
-			return r < 0x0a
-		}) != -1 {
-			klog.Infof("%s:\n%s", prefix, truncateBody(hex.Dump(body)))
-		} else {
-			klog.Infof("%s: %s", prefix, truncateBody(string(body)))
-		}
+	if bytes.IndexFunc(body, func(r rune) bool {
+		return r < 0x0a
+	}) != -1 {
+		klog.Infof("%s:\n%s", prefix, truncateBody(hex.Dump(body)))
+	} else {
+		klog.Infof("%s: %s", prefix, truncateBody(string(body)))
+	}
 }
 
 // checkWait returns true along with a number of seconds if the server instructed us to wait

@@ -84,10 +84,10 @@ func NewRESTClient(baseURL *url.URL, config ClientContentConfig, rateLimiter flo
 	base.Fragment = ""
 
 	return &RESTClient{
-		base:    &base,
-		content: config,
-		rateLimiter:      rateLimiter,
-		Client: client,
+		base:        &base,
+		content:     config,
+		rateLimiter: rateLimiter,
+		Client:      client,
 	}, nil
 }
 

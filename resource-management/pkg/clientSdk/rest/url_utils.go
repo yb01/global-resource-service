@@ -44,4 +44,3 @@ func DefaultServerURL(host, apiPath string, defaultTLS bool) (*url.URL, error) {
 
 	return hostURL, nil
 }
-

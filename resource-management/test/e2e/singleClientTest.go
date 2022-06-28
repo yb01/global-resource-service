@@ -48,7 +48,7 @@ func main() {
 
 	keyFunc := func(obj interface{}) (string, error) {
 		node := obj.(types.LogicalNode)
-		if len(node.Id) == 0{
+		if len(node.Id) == 0 {
 			return "", fmt.Errorf("empty node")
 		}
 		return node.Id, nil
@@ -85,6 +85,7 @@ func main() {
 			}
 
 			// TODO: check the event type to determine add or update
+			klog.V(9).Infof("Received node from server: %v", record)
 			store.Update(record.Object)
 		}
 	}

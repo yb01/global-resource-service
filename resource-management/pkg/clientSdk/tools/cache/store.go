@@ -19,7 +19,6 @@ package cache
 
 import (
 	"fmt"
-
 )
 
 // Store is a generic object storage interface. Reflector knows how to watch a server

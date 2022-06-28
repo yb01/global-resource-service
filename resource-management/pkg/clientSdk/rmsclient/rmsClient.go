@@ -44,7 +44,7 @@ type Config struct {
 // RmsInterface has methods to work with Resource management service resources.
 // below are just 630 related interface definitions
 type RmsInterface interface {
-    Register() (*apiTypes.ClientRegistrationResponse, error)
+	Register() (*apiTypes.ClientRegistrationResponse, error)
 	List(ClientId string) (*apiTypes.ListNodeResponse, error)
 	Watch(clientId string) (watch.Interface, error)
 }
@@ -55,7 +55,7 @@ type rmsClient struct {
 	// REST client to RMS service
 	restClient rest.Interface
 	// ClientId to be set by the Register to the RMS service
-	Id     string
+	Id string
 }
 
 // NewRmsClient returns a Nodes
@@ -68,16 +68,16 @@ func NewRmsClient(cfg Config) *rmsClient {
 		return nil
 	}
 
-	c, err := rest.NewRESTClient(url, rest.ClientContentConfig{}, nil,  &httpclient)
+	c, err := rest.NewRESTClient(url, rest.ClientContentConfig{}, nil, &httpclient)
 	if err != nil {
 		klog.Errorf("failed to get the RESTClient. error %v", err)
 		return nil
 	}
 
 	return &rmsClient{
-		config: cfg,
+		config:     cfg,
 		restClient: c,
-		Id :        "",
+		Id:         "",
 	}
 }
 
@@ -128,12 +128,12 @@ func (c *rmsClient) List(clientId string) ([]*types.LogicalNode, types.ResourceV
 
 	respRet, err := req.DoRaw()
 	if err != nil {
-		return nil, nil,  err
+		return nil, nil, err
 	}
 
 	resp := apiTypes.ListNodeResponse{}
 
-	err = json.Unmarshal(respRet , &resp)
+	err = json.Unmarshal(respRet, &resp)
 
 	actualCrv := resp.ResourceVersions
 
@@ -164,4 +164,3 @@ func (c *rmsClient) Watch(clientId string, versionMap types.ResourceVersionMap) 
 
 	return watcher, nil
 }
-
