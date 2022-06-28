@@ -30,7 +30,7 @@ var (
 )
 
 type Event struct {
-	Type EventType
+	Type   EventType
 	Object types.LogicalNode
 }
 

@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"global-resource-service/resource-management/pkg/clientSdk/rmsclient"
+	"global-resource-service/resource-management/pkg/clientSdk/tools/cache"
+	"global-resource-service/resource-management/pkg/common-lib/types"
 )
 
 func main() {
@@ -44,6 +46,15 @@ func main() {
 	klog.Infof("Got client registration from service: %v", registrationResp)
 	client.Id = registrationResp.ClientId
 
+	keyFunc := func(obj interface{}) (string, error) {
+		node := obj.(types.LogicalNode)
+		if len(node.Id) == 0{
+			return "", fmt.Errorf("empty node")
+		}
+		return node.Id, nil
+	}
+	store := cache.NewStore(keyFunc)
+
 	klog.Infof("List resources from service ...")
 	nodeList, crv, err := client.List(client.Id)
 	if err != nil {
@@ -51,6 +62,10 @@ func main() {
 	}
 	klog.Infof("Got [%v] nodes from service", len(nodeList))
 	klog.Infof("Got [%v] resource versions service", crv)
+
+	for _, node := range nodeList {
+		store.Add(*node)
+	}
 
 	klog.Infof("Watch resources update from service ...")
 	watcher, err := client.Watch(client.Id, crv)
@@ -69,8 +84,8 @@ func main() {
 				return
 			}
 
-			// TODO: write cache, for now just logout
-			klog.V(9).Infof("Getting event from service: %v", record)
+			// TODO: check the event type to determine add or update
+			store.Update(record.Object)
 		}
 	}
 }
