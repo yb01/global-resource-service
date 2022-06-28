@@ -53,7 +53,7 @@ func main() {
 	klog.Infof("Got [%v] resource versions service", crv)
 
 	klog.Infof("Watch resources update from service ...")
-	watcher, err := client.Watch(client.Id)
+	watcher, err := client.Watch(client.Id, crv)
 	if err != nil {
 		klog.Errorf("failed list resource from service. error %v", err)
 	}
@@ -65,12 +65,12 @@ func main() {
 		case record, ok := <-watchCh:
 			if !ok {
 				// End of results.
-				klog.V(3).Infof("End of results")
+				klog.Infof("End of results")
 				return
 			}
 
 			// TODO: write cache, for now just logout
-			klog.V(3).Infof("Getting event from servicee: %v", record)
+			klog.V(9).Infof("Getting event from service: %v", record)
 		}
 	}
 }

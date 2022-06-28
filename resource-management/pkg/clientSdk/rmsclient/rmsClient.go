@@ -142,27 +142,26 @@ func (c *rmsClient) List(clientId string) ([]*types.LogicalNode, types.ResourceV
 }
 
 // Watch returns a watch.Interface that watches the requested rmsClient.
-func (c *rmsClient) Watch(clientId string) (watch.Interface, error) {
-	return watch.NewEmptyWatch(), nil
-	//var timeout time.Duration
-	//if opts.TimeoutSeconds != nil {
-	//	timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	//}
-	//opts.Watch = true
-	//aggWatch := watch.NewAggregatedWatcher()
-	//for _, client := range c.clients {
-	//	watcher, err := client.Get().
-	//		Resource("rmsClient").
-	//		VersionedParams(&opts, scheme.ParameterCodec).
-	//		Timeout(timeout).
-	//		Watch()
-	//	if err != nil && opts.AllowPartialWatch && errors.IsForbidden(err) {
-	//		// watch error was not returned properly in error message. Skip when partial watch is allowed
-	//		klog.V(6).Infof("Watch error for partial watch %v. options [%+v]", err, opts)
-	//		continue
-	//	}
-	//	aggWatch.AddWatchInterface(watcher, err)
-	//}
-	//return aggWatch, aggWatch.GetErrors()
+func (c *rmsClient) Watch(clientId string, versionMap types.ResourceVersionMap) (watch.Interface, error) {
+	req := c.restClient.Post()
+	req = req.Resource("resource")
+	req = req.Name(c.Id)
+	req = req.Timeout(c.config.RequestTimeout)
+	req = req.Param("watch", "true")
+
+	crv := apiTypes.WatchRequest{ResourceVersions: versionMap}
+
+	body, err := json.Marshal(crv)
+	if err != nil {
+		return nil, err
+	}
+	req = req.Body(body)
+
+	watcher, err := req.Watch()
+	if err != nil {
+		return nil, err
+	}
+
+	return watcher, nil
 }
 

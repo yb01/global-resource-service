@@ -23,9 +23,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"global-resource-service/resource-management/pkg/clientSdk/rest/watch"
 	"io"
 	"io/ioutil"
 	"k8s.io/klog/v2"
+	"mime"
 	"net/http"
 	"net/url"
 	"path"
@@ -33,6 +35,7 @@ import (
 	"strings"
 	"time"
 
+	"global-resource-service/resource-management/pkg/clientSdk/util/errors"
 	"global-resource-service/resource-management/pkg/clientSdk/util/flowcontrol"
 	"global-resource-service/resource-management/pkg/clientSdk/util/net"
 	"global-resource-service/resource-management/pkg/clientSdk/watch"
@@ -339,51 +342,52 @@ func (r *Request) tryThrottle() error {
 // Watch attempts to begin watching the requested location.
 // Returns a watch.Interface, or an error.
 func (r *Request) Watch() (watch.Interface, error) {
+	// We specifically don't want to rate limit watches, so we
+	// don't use r.rateLimiter here.
+	if r.err != nil {
+		return nil, r.err
+	}
 
-	return watch.NewEmptyWatch(), nil
-	//// We specifically don't want to rate limit watches, so we
-	//// don't use r.rateLimiter here.
-	//if r.err != nil {
-	//	return nil, r.err
-	//}
-	//
-	//url := r.URL().String()
-	//req, err := http.NewRequest(r.verb, url, r.body)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//if r.ctx != nil {
-	//	req = req.WithContext(r.ctx)
-	//}
-	//req.Header = r.headers
-	//client := r.c.Client
-	//if client == nil {
-	//	client = http.DefaultClient
-	//}
-	//
-	//resp, err := client.Do(req)
-	//
-	//if err != nil {
-	//	// The watch stream mechanism handles many common partial data errors, so closed
-	//	// connections can be retried in many cases.
-	//	if net.IsProbableEOF(err) || net.IsTimeout(err) {
-	//		return watch.NewEmptyWatch(), nil
-	//	}
-	//	return nil, err
-	//}
-	//if resp.StatusCode != http.StatusOK {
-	//	defer resp.Body.Close()
-	//	if result := r.transformResponse(resp, req); result.err != nil {
-	//		return nil, result.err
-	//	}
-	//	return nil, fmt.Errorf("for request %s, got status: %v", url, resp.StatusCode)
-	//}
-	//
-	//contentType := resp.Header.Get("Content-Type")
-	//mediaType, params, err := mime.ParseMediaType(contentType)
-	//if err != nil {
-	//	klog.V(4).Infof("Unexpected content type from the server: %q: %v", contentType, err)
-	//}
+	url := r.URL().String()
+	req, err := http.NewRequest(r.verb, url, r.body)
+	if err != nil {
+		return nil, err
+	}
+	if r.ctx != nil {
+		req = req.WithContext(r.ctx)
+	}
+	req.Header = r.headers
+	client := r.c.Client
+	if client == nil {
+		client = http.DefaultClient
+	}
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		// The watch stream mechanism handles many common partial data errors, so closed
+		// connections can be retried in many cases.
+		if net.IsProbableEOF(err) || net.IsTimeout(err) {
+			return watch.NewEmptyWatch(), nil
+		}
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		defer resp.Body.Close()
+		if result := r.transformResponse(resp, req); result.err != nil {
+			return nil, result.err
+		}
+		return nil, fmt.Errorf("for request %s, got status: %v", url, resp.StatusCode)
+	}
+
+	contentType := resp.Header.Get("Content-Type")
+	mediaType, params, err := mime.ParseMediaType(contentType)
+	if err != nil {
+		klog.V(4).Infof("Unexpected content type from the server: %q: %v", contentType, err)
+	}
+
+	klog.V(6).Infof("contentType: %v, mediaType: %v, parameters: %v from the server.", contentType, mediaType, params)
+
 	//objectDecoder, streamingSerializer, framer, err := r.c.content.Negotiator.StreamDecoder(mediaType, params)
 	//if err != nil {
 	//	return nil, err
@@ -391,13 +395,15 @@ func (r *Request) Watch() (watch.Interface, error) {
 	//
 	//frameReader := framer.NewFrameReader(resp.Body)
 	//watchEventDecoder := streaming.NewDecoder(frameReader, streamingSerializer)
-	//
-	//return watch.NewStreamWatcher(
-	//	restclientwatch.NewDecoder(watchEventDecoder, objectDecoder),
-	//	// use 500 to indicate that the cause of the error is unknown - other error codes
-	//	// are more specific to HTTP interactions, and set a reason
-	//	errors.NewClientErrorReporter(http.StatusInternalServerError, r.verb, "ClientWatchDecoding"),
-	//), nil
+
+	dec := json.NewDecoder(resp.Body)
+
+	return watch.NewStreamWatcher(
+		versioned.NewDecoder(dec),
+		// use 500 to indicate that the cause of the error is unknown - other error codes
+		// are more specific to HTTP interactions, and set a reason
+		errors.NewClientErrorReporter(http.StatusInternalServerError, r.verb, "ClientWatchDecoding"),
+	), nil
 }
 
 
