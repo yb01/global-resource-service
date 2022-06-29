@@ -11,6 +11,7 @@ import (
 	"global-resource-service/resource-management/pkg/clientSdk/rmsclient"
 	"global-resource-service/resource-management/pkg/clientSdk/tools/cache"
 	"global-resource-service/resource-management/pkg/common-lib/types"
+	"global-resource-service/resource-management/pkg/common-lib/types/event"
 )
 
 func main() {
@@ -84,9 +85,19 @@ func main() {
 				return
 			}
 
-			// TODO: check the event type to determine add or update
-			klog.Infof("Received node from server: %v", record)
-			store.Update(*record.Node)
+			klog.V(9).Infof("Received node from server: %v, %v", record, *record.Node)
+			switch record.Type {
+			case event.Added:
+				store.Add(*record.Node)
+			case event.Modified:
+				store.Update(*record.Node)
+			case event.Deleted:
+				store.Delete(*record.Node)
+
+			default:
+				klog.Error("not supported event type")
+			}
+
 		}
 	}
 }
