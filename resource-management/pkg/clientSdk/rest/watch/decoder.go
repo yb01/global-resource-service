@@ -18,10 +18,10 @@ package versioned
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"global-resource-service/resource-management/pkg/common-lib/types"
-
-	"global-resource-service/resource-management/pkg/clientSdk/watch"
+	"global-resource-service/resource-management/pkg/common-lib/types/event"
 )
 
 // Decoder implements the watch.Decoder interface for io.ReadClosers that
@@ -41,21 +41,20 @@ func NewDecoder(decoder *json.Decoder) *Decoder {
 
 // Decode blocks until it can return the next object in the reader. Returns an error
 // if the reader is closed or an object can't be decoded.
-func (d *Decoder) Decode() (watch.EventType, *types.LogicalNode, error) {
-	var got types.LogicalNode
+func (d *Decoder) Decode() (event.EventType, *types.LogicalNode, error) {
+	var got event.NodeEvent
 	err := d.decoder.Decode(&got)
 	if err != nil {
 		return "", nil, err
 	}
 
-	//TODO: after change the watch return to the event instead of the logicalNode, enable the commeented code below
-	//switch got.Type {
-	//case string(watch.Added), string(watch.Modified), string(watch.Deleted), string(watch.Error), string(watch.Bookmark):
-	//default:
-	//	return "", nil, fmt.Errorf("got invalid watch event type: %v", got.Type)
-	//}
+	switch got.Type {
+	case event.Added, event.Modified, event.Deleted, event.Error, event.Bookmark:
+	default:
+		return "", nil, fmt.Errorf("got invalid watch event type: %v", got.Type)
+	}
 
-	return watch.Added, &got, nil
+	return got.Type, got.Node, nil
 }
 
 // Close closes the underlying r.

@@ -85,8 +85,8 @@ func main() {
 			}
 
 			// TODO: check the event type to determine add or update
-			klog.V(9).Infof("Received node from server: %v", record)
-			store.Update(record.Object)
+			klog.Infof("Received node from server: %v", record)
+			store.Update(*record.Node)
 		}
 	}
 }

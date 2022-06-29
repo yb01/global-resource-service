@@ -30,8 +30,8 @@ func NewClientErrorReporter(code int, verb string, reason string) *ErrorReporter
 
 // TODO: since we dont have a status oject, so should expand the report the error.
 //
-func (r *ErrorReporter) AsObject(err error) types.LogicalNode {
-	return types.LogicalNode{}
+func (r *ErrorReporter) AsObject(err error) *types.LogicalNode {
+	return &types.LogicalNode{}
 	//reason := r.reason
 	//if len(reason) == 0 {
 	//	reason = "ClientError"
