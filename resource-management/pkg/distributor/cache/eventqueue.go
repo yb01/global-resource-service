@@ -3,13 +3,13 @@ package cache
 import (
 	"errors"
 	"fmt"
-	"global-resource-service/resource-management/pkg/common-lib/types/location"
 	"k8s.io/klog/v2"
 	"sort"
 	"sync"
 
 	"global-resource-service/resource-management/pkg/common-lib/types"
 	"global-resource-service/resource-management/pkg/common-lib/types/event"
+	"global-resource-service/resource-management/pkg/common-lib/types/location"
 	"global-resource-service/resource-management/pkg/distributor/node"
 )
 

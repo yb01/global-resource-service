@@ -67,6 +67,7 @@ func (vs *VirtualNodeStore) GetRange() (float64, float64) {
 	return vs.lowerbound, vs.upperbound
 }
 
+// Snapshot generates a list of node for the List() call from a client, and a current RV map to client
 func (vs *VirtualNodeStore) SnapShot() ([]*types.LogicalNode, types.ResourceVersionMap) {
 	vs.mu.RLock()
 	defer vs.mu.RUnlock()
