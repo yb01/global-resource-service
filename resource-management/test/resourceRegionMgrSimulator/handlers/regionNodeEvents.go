@@ -110,7 +110,7 @@ func (re *RegionNodeEventHandler) SimulatorHandler(rw http.ResponseWriter, r *ht
 		klog.V(9).Infof("debug: CRV is %v", aggregatorClientReq.CRV)
 
 		for k, v := range aggregatorClientReq.CRV {
-			klog.V(9).Infof("debug: RV in map, key: %v-%v, value: %v", k.GetRegion(), k.GetResourcePartition(), v)
+			klog.V(9).Infof("debug: RV in map, key: %v-%v, value: %v", k.Region, k.Partition, v)
 		}
 
 		// Serialize boolean result to JSON
