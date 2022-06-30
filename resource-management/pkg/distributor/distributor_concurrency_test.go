@@ -97,9 +97,9 @@ func TestSingleRPMutipleClients_Workflow(t *testing.T) {
 				// check each node event
 				nodeIds := make(map[string]bool)
 				for _, node := range nodes {
-					nodeLoc := location.NewLocation(location.Region(node.GeoInfo.Region), location.ResourcePartition(node.GeoInfo.ResourcePartition))
+					nodeLoc := types.RvLocation{Region: location.Region(node.GeoInfo.Region), Partition: location.ResourcePartition (node.GeoInfo.ResourcePartition)}
 					assert.NotNil(t, nodeLoc)
-					assert.True(t, latestRVs[*nodeLoc] >= node.GetResourceVersionInt64())
+					assert.True(t, latestRVs[nodeLoc] >= node.GetResourceVersionInt64())
 					if _, isOK := nodeIds[node.Id]; isOK {
 						assert.Fail(t, "List nodes cannot have more than one copy of a node")
 					} else {
@@ -282,9 +282,9 @@ func TestMultipleRPsMutipleClients_Workflow(t *testing.T) {
 					// check each node event
 					nodeIds := make(map[string]bool)
 					for _, node := range nodes {
-						nodeLoc := location.NewLocation(location.Region(node.GeoInfo.Region), location.ResourcePartition(node.GeoInfo.ResourcePartition))
+						nodeLoc := types.RvLocation{Region: location.Region(node.GeoInfo.Region), Partition: location.ResourcePartition (node.GeoInfo.ResourcePartition)}
 						assert.NotNil(t, nodeLoc)
-						assert.True(t, latestRVs[*nodeLoc] >= node.GetResourceVersionInt64())
+						assert.True(t, latestRVs[nodeLoc] >= node.GetResourceVersionInt64())
 						if _, isOK := nodeIds[node.Id]; isOK {
 							assert.Fail(t, "List nodes cannot have more than one copy of a node")
 						} else {

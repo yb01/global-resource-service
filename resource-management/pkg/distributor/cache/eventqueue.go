@@ -9,7 +9,6 @@ import (
 
 	"global-resource-service/resource-management/pkg/common-lib/types"
 	"global-resource-service/resource-management/pkg/common-lib/types/event"
-	"global-resource-service/resource-management/pkg/common-lib/types/location"
 	"global-resource-service/resource-management/pkg/distributor/node"
 )
 
@@ -100,14 +99,14 @@ type NodeEventQueue struct {
 	// used to lock enqueue operation during snapshot
 	enqueueLock sync.RWMutex
 
-	eventQueueByLoc map[location.Location]*nodeEventQueueByLoc
+	eventQueueByLoc map[types.RvLocation]*nodeEventQueueByLoc
 	locationLock    sync.RWMutex
 }
 
 func NewNodeEventQueue(clientId string) *NodeEventQueue {
 	queue := &NodeEventQueue{
 		clientId:        clientId,
-		eventQueueByLoc: make(map[location.Location]*nodeEventQueueByLoc),
+		eventQueueByLoc: make(map[types.RvLocation]*nodeEventQueueByLoc),
 	}
 
 	return queue
@@ -132,10 +131,11 @@ func (eq *NodeEventQueue) EnqueueEvent(e *node.ManagedNodeEvent) {
 
 	eq.locationLock.Lock()
 	defer eq.locationLock.Unlock()
-	queueByLoc, isOK := eq.eventQueueByLoc[*e.GetLocation()]
+	rvLoc := *e.GetRvLocation()
+	queueByLoc, isOK := eq.eventQueueByLoc[rvLoc]
 	if !isOK {
 		queueByLoc = newNodeQueueByLoc()
-		eq.eventQueueByLoc[*e.GetLocation()] = queueByLoc
+		eq.eventQueueByLoc[rvLoc] = queueByLoc
 	}
 	queueByLoc.enqueueEvent(e)
 }
@@ -183,7 +183,7 @@ func (eq *NodeEventQueue) Watch(rvs types.ResourceVersionMap, clientWatchChan ch
 }
 
 func (eq *NodeEventQueue) getAllEventsSinceResourceVersion(rvs types.ResourceVersionMap) ([]*event.NodeEvent, error) {
-	locStartPostitions := make(map[location.Location]int)
+	locStartPostitions := make(map[types.RvLocation]int)
 
 	for loc, rv := range rvs {
 		qByLoc, isOK := eq.eventQueueByLoc[loc]
