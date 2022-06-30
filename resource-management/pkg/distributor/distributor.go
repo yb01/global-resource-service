@@ -239,7 +239,9 @@ func (dis *ResourceDistributor) Watch(clientId string, rvs types.ResourceVersion
 		return errors.New("Stop watch channel not provided")
 	}
 
-	return nodeEventQueue.Watch(rvs, watchChan, stopCh)
+	internal_rvs := types.ConvertToInternalResourceVersionMap(rvs)
+
+	return nodeEventQueue.Watch(internal_rvs, watchChan, stopCh)
 }
 
 func (dis *ResourceDistributor) ProcessEvents(events []*event.NodeEvent) (bool, types.ResourceVersionMap) {

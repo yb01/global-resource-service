@@ -140,7 +140,7 @@ func (eq *NodeEventQueue) EnqueueEvent(e *node.ManagedNodeEvent) {
 	queueByLoc.enqueueEvent(e)
 }
 
-func (eq *NodeEventQueue) Watch(rvs types.ResourceVersionMap, clientWatchChan chan *event.NodeEvent, stopCh chan struct{}) error {
+func (eq *NodeEventQueue) Watch(rvs types.InternalResourceVersionMap, clientWatchChan chan *event.NodeEvent, stopCh chan struct{}) error {
 	if eq.watchChan != nil {
 		return errors.New("currently only support one watcher per node event queue")
 	}
@@ -182,10 +182,8 @@ func (eq *NodeEventQueue) Watch(rvs types.ResourceVersionMap, clientWatchChan ch
 	return nil
 }
 
-func (eq *NodeEventQueue) getAllEventsSinceResourceVersion(r types.ResourceVersionMap) ([]*event.NodeEvent, error) {
+func (eq *NodeEventQueue) getAllEventsSinceResourceVersion(rvs types.InternalResourceVersionMap) ([]*event.NodeEvent, error) {
 	locStartPostitions := make(map[location.Location]int)
-
-	rvs := types.ConvertToInternalResourceVersionMap(r)
 
 	for loc, rv := range rvs {
 		qByLoc, isOK := eq.eventQueueByLoc[loc]

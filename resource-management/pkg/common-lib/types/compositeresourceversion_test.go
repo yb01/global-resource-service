@@ -9,8 +9,8 @@ import (
 
 func TestResourceVersionMap_Marshall_UnMarshall(t *testing.T) {
 	rvs := make(ResourceVersionMap)
-	loc := location.NewLocation(location.Beijing, location.ResourcePartition1)
-	rvs[*loc] = 100
+	loc := RvLocation{Region: location.Beijing, Partition: location.ResourcePartition1}
+	rvs[loc] = 100
 
 	// marshall
 	b, err := json.Marshal(rvs)
@@ -23,5 +23,5 @@ func TestResourceVersionMap_Marshall_UnMarshall(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, newRVMap)
 	assert.Equal(t, 1, len(newRVMap))
-	assert.Equal(t, uint64(100), newRVMap[*loc])
+	assert.Equal(t, uint64(100), newRVMap[loc])
 }
