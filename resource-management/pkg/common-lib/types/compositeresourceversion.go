@@ -27,7 +27,21 @@ func (loc *RvLocation) UnmarshalText(text []byte) error {
 }
 
 // Map from (regionId, ResourcePartitionId) to resourceVersion
+// used in REST API calls
 type ResourceVersionMap map[RvLocation]uint64
+
+// internally used in the eventqueue
+type InternalResourceVersionMap map[location.Location]uint64
+
+func ConvertToInternalResourceVersionMap(rvs ResourceVersionMap) InternalResourceVersionMap {
+	internalMap := make(InternalResourceVersionMap)
+
+	for k, v := range rvs {
+		internalMap[*location.NewLocation(k.Region, k.Partition)] = v
+	}
+
+	return internalMap
+}
 
 func (rvs *ResourceVersionMap) Copy() ResourceVersionMap {
 	dupRVs := make(ResourceVersionMap, len(*rvs))

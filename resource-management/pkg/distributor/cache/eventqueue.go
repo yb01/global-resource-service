@@ -3,6 +3,7 @@ package cache
 import (
 	"errors"
 	"fmt"
+	"global-resource-service/resource-management/pkg/common-lib/types/location"
 	"k8s.io/klog/v2"
 	"sort"
 	"sync"
@@ -99,14 +100,14 @@ type NodeEventQueue struct {
 	// used to lock enqueue operation during snapshot
 	enqueueLock sync.RWMutex
 
-	eventQueueByLoc map[types.RvLocation]*nodeEventQueueByLoc
+	eventQueueByLoc map[location.Location]*nodeEventQueueByLoc
 	locationLock    sync.RWMutex
 }
 
 func NewNodeEventQueue(clientId string) *NodeEventQueue {
 	queue := &NodeEventQueue{
 		clientId:        clientId,
-		eventQueueByLoc: make(map[types.RvLocation]*nodeEventQueueByLoc),
+		eventQueueByLoc: make(map[location.Location]*nodeEventQueueByLoc),
 	}
 
 	return queue
@@ -131,18 +132,17 @@ func (eq *NodeEventQueue) EnqueueEvent(e *node.ManagedNodeEvent) {
 
 	eq.locationLock.Lock()
 	defer eq.locationLock.Unlock()
-	rvLoc := *e.GetRvLocation()
-	queueByLoc, isOK := eq.eventQueueByLoc[rvLoc]
+	queueByLoc, isOK := eq.eventQueueByLoc[*e.GetLocation()]
 	if !isOK {
 		queueByLoc = newNodeQueueByLoc()
-		eq.eventQueueByLoc[rvLoc] = queueByLoc
+		eq.eventQueueByLoc[*e.GetLocation()] = queueByLoc
 	}
 	queueByLoc.enqueueEvent(e)
 }
 
 func (eq *NodeEventQueue) Watch(rvs types.ResourceVersionMap, clientWatchChan chan *event.NodeEvent, stopCh chan struct{}) error {
 	if eq.watchChan != nil {
-		return errors.New("Currently only support one watcher per node event queue.")
+		return errors.New("currently only support one watcher per node event queue")
 	}
 
 	// get events already in queues
@@ -182,8 +182,10 @@ func (eq *NodeEventQueue) Watch(rvs types.ResourceVersionMap, clientWatchChan ch
 	return nil
 }
 
-func (eq *NodeEventQueue) getAllEventsSinceResourceVersion(rvs types.ResourceVersionMap) ([]*event.NodeEvent, error) {
-	locStartPostitions := make(map[types.RvLocation]int)
+func (eq *NodeEventQueue) getAllEventsSinceResourceVersion(r types.ResourceVersionMap) ([]*event.NodeEvent, error) {
+	locStartPostitions := make(map[location.Location]int)
+
+	rvs := types.ConvertToInternalResourceVersionMap(r)
 
 	for loc, rv := range rvs {
 		qByLoc, isOK := eq.eventQueueByLoc[loc]
