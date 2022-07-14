@@ -2,6 +2,7 @@ package event
 
 import (
 	"k8s.io/klog/v2"
+	"sync"
 	"time"
 
 	"global-resource-service/resource-management/pkg/common-lib/metrics"
@@ -10,6 +11,8 @@ import (
 
 // EventType defines the possible types of events.
 type EventType string
+
+var checkPointLock sync.RWMutex
 
 const (
 	Added    EventType = "ADDED"
@@ -43,6 +46,9 @@ func (e *NodeEvent) SetCheckpoint(checkpoint metrics.ResourceManagementCheckpoin
 	if !metrics.ResourceManagementMeasurement_Enabled {
 		return
 	}
+
+	checkPointLock.Lock()
+	defer checkPointLock.Unlock()
 
 	if _, isOK := e.checkpoints[checkpoint]; !isOK {
 		e.checkpoints[checkpoint] = time.Now().UTC()

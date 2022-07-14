@@ -39,12 +39,14 @@ func AddLatencyMetricsAllCheckpoints(e *NodeEvent) {
 	}
 	lastUpdatedTime := e.Node.LastUpdatedTime
 
+	checkPointLock.RLock()
 	agg_received_time, isOK1 := checkpointsPerEvent[metrics.Aggregator_Received]
 	dis_received_time, isOK2 := checkpointsPerEvent[metrics.Distributor_Received]
 	dis_sending_time, isOK3 := checkpointsPerEvent[metrics.Distributor_Sending]
 	dis_sent_time, isOK4 := checkpointsPerEvent[metrics.Distributor_Sent]
 	serializer_encoded_time, isOK5 := checkpointsPerEvent[metrics.Serializer_Encoded]
 	serializer_sent_time, isOK6 := checkpointsPerEvent[metrics.Serializer_Sent]
+	checkPointLock.RUnlock()
 
 	latencyMetricsLock.Lock()
 	defer latencyMetricsLock.Unlock()
