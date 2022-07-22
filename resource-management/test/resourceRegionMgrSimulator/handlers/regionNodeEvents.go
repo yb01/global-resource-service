@@ -5,16 +5,22 @@ import (
 
 	"k8s.io/klog/v2"
 
+	"global-resource-service/resource-management/pkg/common-lib/serializer"
+	localJson "global-resource-service/resource-management/pkg/common-lib/serializer/json"
 	"global-resource-service/resource-management/test/resourceRegionMgrSimulator/data"
 	simulatorTypes "global-resource-service/resource-management/test/resourceRegionMgrSimulator/types"
 )
 
-type RegionNodeEventHandler struct{}
+type RegionNodeEventHandler struct {
+	serializer serializer.Serializer
+}
 
 // NewRegionNodeEvents creates a Region Node Events handler with the given logger
 //
 func NewRegionNodeEventsHander() *RegionNodeEventHandler {
-	return &RegionNodeEventHandler{}
+	return &RegionNodeEventHandler{
+		serializer: localJson.NewSerializer("foo", false),
+	}
 }
 
 func (re *RegionNodeEventHandler) SimulatorHandler(rw http.ResponseWriter, r *http.Request) {
@@ -90,7 +96,7 @@ func (re *RegionNodeEventHandler) SimulatorHandler(rw http.ResponseWriter, r *ht
 		}
 
 		// Serialize region node events result to JSON
-		err = response.ToJSON(rw)
+		err = re.serializer.Encode(response, rw)
 
 		if err != nil {
 			klog.Errorf("Error - Unable to marshal json : ", err)

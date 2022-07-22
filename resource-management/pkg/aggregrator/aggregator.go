@@ -2,6 +2,7 @@ package aggregrator
 
 import (
 	"encoding/json"
+	//	"global-resource-service/resource-management/pkg/common-lib/serializer/protobuf"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -11,6 +12,8 @@ import (
 
 	distributor "global-resource-service/resource-management/pkg/common-lib/interfaces/distributor"
 	"global-resource-service/resource-management/pkg/common-lib/metrics"
+	"global-resource-service/resource-management/pkg/common-lib/serializer"
+	localJson "global-resource-service/resource-management/pkg/common-lib/serializer/json"
 	"global-resource-service/resource-management/pkg/common-lib/types"
 	"global-resource-service/resource-management/pkg/common-lib/types/event"
 )
@@ -18,6 +21,7 @@ import (
 type Aggregator struct {
 	urls           []string
 	EventProcessor distributor.Interface
+	serializer     serializer.Serializer
 }
 
 // To be client of Resource Region Manager
@@ -92,9 +96,11 @@ func (a *Aggregator) Run() (err error) {
 				// when composite RV is nil, the method initPull is called;
 				// otherwise the method subsequentPull is called.
 				// To simplify the codes, we use one method initPullOrSubsequentPull instead
+				pullStarts := time.Now()
 				regionNodeEvents, length = a.initPullOrSubsequentPull(c, DefaultBatchLength, crv)
 				if length != 0 {
-					klog.V(4).Infof("Total (%v) region node events are pulled successfully in (%v) RPs", length, len(regionNodeEvents))
+					pullEnds := time.Now()
+					klog.V(4).Infof("Total (%v) region node events are pulled successfully in (%v) RPs. pull duration", length, len(regionNodeEvents), pullEnds.Sub(pullStarts))
 
 					// Convert 2D array to 1D array
 					minRecordNodeEvents := make([]*event.NodeEvent, 0, length)
@@ -151,8 +157,9 @@ func (a *Aggregator) initPullOrSubsequentPull(c *ClientOfRRM, batchLength uint64
 		path = httpPrefix + c.BaseURL + "/resources/subsequentpull"
 	}
 
+	serializer := localJson.NewSerializer("foo", false)
 	bytes, _ := json.Marshal(PullDataFromRRM{BatchLength: batchLength, CRV: crv.Copy()})
-	req, err := http.NewRequest(http.MethodGet, path, strings.NewReader((string(bytes))))
+	req, err := http.NewRequest(http.MethodGet, path, strings.NewReader(string(bytes)))
 	if err != nil {
 		klog.Errorf(err.Error())
 	}
@@ -173,9 +180,9 @@ func (a *Aggregator) initPullOrSubsequentPull(c *ClientOfRRM, batchLength uint64
 	}
 
 	var ResponseObject ResponseFromRRM
-	err = json.Unmarshal(bodyBytes, &ResponseObject)
-	if err != nil {
-		klog.Errorf("Error from JSON Unmarshal:", err)
+	_, err1 := serializer.Decode(bodyBytes, &ResponseObject)
+	if err1 != nil {
+		klog.Errorf("Error decode response body:", err)
 		return nil, 0
 	}
 
