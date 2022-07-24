@@ -4,8 +4,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"global-resource-service/resource-management/pkg/common-lib/types"
-	"global-resource-service/resource-management/pkg/common-lib/types/event"
-	"global-resource-service/resource-management/pkg/common-lib/types/location"
 	nodeutil "global-resource-service/resource-management/pkg/distributor/node"
 	"strconv"
 	"strings"
@@ -13,7 +11,7 @@ import (
 )
 
 var rvToGenerate = 10
-var defaultLocBeijing_RP1 = location.NewLocation(location.Beijing, location.ResourcePartition1)
+var defaultLocBeijing_RP1 = types.NewLocation(types.Beijing, types.ResourcePartition1)
 
 func Test_getEventIndexSinceResourceVersion_ByLoc(t *testing.T) {
 	// initalize node event queue by loc
@@ -90,14 +88,14 @@ func Test_getEventIndexSinceResourceVersion_ByLoc(t *testing.T) {
 	assert.Equal(t, -1, index)
 }
 
-func generateManagedNodeEvent(loc *location.Location) *nodeutil.ManagedNodeEvent {
+func generateManagedNodeEvent(loc *types.Location) *nodeutil.ManagedNodeEvent {
 	rvToGenerate += 1
 	node := createRandomNode(rvToGenerate, loc)
-	nodeEvent := event.NewNodeEvent(node, event.Added)
+	nodeEvent := types.NewNodeEvent(node, types.Added)
 	return nodeutil.NewManagedNodeEvent(nodeEvent, loc)
 }
 
-func createRandomNode(rv int, loc *location.Location) *types.LogicalNode {
+func createRandomNode(rv int, loc *types.Location) *types.LogicalNode {
 	id := uuid.New()
 	return &types.LogicalNode{
 		Id:              id.String(),

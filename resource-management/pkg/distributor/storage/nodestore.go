@@ -8,8 +8,6 @@ import (
 	"global-resource-service/resource-management/pkg/common-lib/hash"
 	"global-resource-service/resource-management/pkg/common-lib/interfaces/store"
 	"global-resource-service/resource-management/pkg/common-lib/types"
-	"global-resource-service/resource-management/pkg/common-lib/types/event"
-	"global-resource-service/resource-management/pkg/common-lib/types/location"
 	"global-resource-service/resource-management/pkg/distributor/cache"
 	"global-resource-service/resource-management/pkg/distributor/node"
 )
@@ -25,7 +23,7 @@ type VirtualNodeStore struct {
 	upperbound      float64
 
 	// one virtual store can only have nodes from one resource partition
-	location location.Location
+	location types.Location
 
 	clientId   string
 	eventQueue *cache.NodeEventQueue
@@ -37,7 +35,7 @@ func (vs *VirtualNodeStore) GetHostNum() int {
 	return len(vs.nodeEventByHash)
 }
 
-func (vs *VirtualNodeStore) GetLocation() location.Location {
+func (vs *VirtualNodeStore) GetLocation() types.Location {
 	return vs.location
 }
 
@@ -97,7 +95,7 @@ func (vs *VirtualNodeStore) GenerateBookmarkEvent() *node.ManagedNodeEvent {
 
 	for _, n := range vs.nodeEventByHash {
 		logicalNode := n.CopyNode()
-		nodeEvent := event.NewNodeEvent(logicalNode, event.Bookmark)
+		nodeEvent := types.NewNodeEvent(logicalNode, types.Bookmark)
 		return node.NewManagedNodeEvent(nodeEvent, n.GetLocation())
 	}
 	return nil
@@ -145,7 +143,7 @@ func NewNodeStore(vNodeNumPerRP int, regionNum int, partitionMaxNum int) *NodeSt
 	ns := &NodeStore{
 		virtualNodeNum:  totalVirtualNodeNum,
 		vNodeStores:     &virtualNodeStores,
-		granularOfRing:  location.RingRange / (float64(totalVirtualNodeNum)),
+		granularOfRing:  types.RingRange / (float64(totalVirtualNodeNum)),
 		regionNum:       regionNum,
 		partitionMaxNum: partitionMaxNum,
 		resourceSlots:   regionNum * partitionMaxNum,
@@ -165,7 +163,7 @@ func (ns *NodeStore) GetCurrentResourceVersions() types.TransitResourceVersionMa
 	for i := 0; i < ns.regionNum; i++ {
 		for j := 0; j < ns.partitionMaxNum; j++ {
 			if ns.currentRVs[i][j] > 0 {
-				rvMap[types.RvLocation{Region: location.Regions[i], Partition: location.ResourcePartitions[j]}] = ns.currentRVs[i][j]
+				rvMap[types.RvLocation{Region: types.Regions[i], Partition: types.ResourcePartitions[j]}] = ns.currentRVs[i][j]
 			}
 		}
 	}
@@ -202,11 +200,11 @@ func (ns *NodeStore) generateVirtualNodeStores(vNodeNumPerRP int) {
 
 	vNodeIndex := 0
 	for k := 0; k < ns.regionNum; k++ {
-		region := location.Regions[k]
-		rpsInRegion := location.GetRPsForRegion(region)
+		region := types.Regions[k]
+		rpsInRegion := types.GetRPsForRegion(region)
 
 		for m := 0; m < ns.partitionMaxNum; m++ {
-			loc := location.NewLocation(region, rpsInRegion[m])
+			loc := types.NewLocation(region, rpsInRegion[m])
 			lowerBound, upperBound := loc.GetArcRangeFromLocation()
 
 			for i := 0; i < vNodeNumPerRP; i++ {
@@ -227,7 +225,7 @@ func (ns *NodeStore) generateVirtualNodeStores(vNodeNumPerRP int) {
 		}
 	}
 
-	(*ns.vNodeStores)[ns.virtualNodeNum-1].upperbound = location.RingRange
+	(*ns.vNodeStores)[ns.virtualNodeNum-1].upperbound = types.RingRange
 }
 
 func (ns *NodeStore) CreateNode(nodeEvent *node.ManagedNodeEvent) {
@@ -244,7 +242,7 @@ func (ns *NodeStore) UpdateNode(nodeEvent *node.ManagedNodeEvent) {
 }
 
 // TODO
-func (ns NodeStore) DeleteNode(nodeEvent event.NodeEvent) {
+func (ns NodeStore) DeleteNode(nodeEvent types.NodeEvent) {
 }
 
 func (ns *NodeStore) ProcessNodeEvents(nodeEvents []*node.ManagedNodeEvent, persistHelper *DistributorPersistHelper) (bool, types.TransitResourceVersionMap) {
@@ -269,10 +267,10 @@ func (ns *NodeStore) ProcessNodeEvents(nodeEvents []*node.ManagedNodeEvent, pers
 
 func (ns *NodeStore) processNodeEvent(nodeEvent *node.ManagedNodeEvent, persistHelper *DistributorPersistHelper) bool {
 	switch nodeEvent.GetEventType() {
-	case event.Added:
+	case types.Added:
 		ns.CreateNode(nodeEvent)
 		persistHelper.PersistNode(nodeEvent.GetNodeEvent().Node)
-	case event.Modified:
+	case types.Modified:
 		ns.UpdateNode(nodeEvent)
 		persistHelper.PersistNode(nodeEvent.GetNodeEvent().Node)
 	default:

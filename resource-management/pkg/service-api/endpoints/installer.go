@@ -14,7 +14,6 @@ import (
 	store "global-resource-service/resource-management/pkg/common-lib/interfaces/store"
 	"global-resource-service/resource-management/pkg/common-lib/metrics"
 	"global-resource-service/resource-management/pkg/common-lib/types"
-	"global-resource-service/resource-management/pkg/common-lib/types/event"
 	apiTypes "global-resource-service/resource-management/pkg/service-api/types"
 )
 
@@ -169,7 +168,7 @@ func (i *Installer) serverWatch(resp http.ResponseWriter, req *http.Request, cli
 	klog.V(3).Infof("Serving watch for client: %s", clientId)
 
 	// For 630 distributor impl, watchChannel and stopChannel passed into the Watch routine from API layer
-	watchCh := make(chan *event.NodeEvent, WatchChannelSize)
+	watchCh := make(chan *types.NodeEvent, WatchChannelSize)
 	stopCh := make(chan struct{})
 
 	// Signal the distributor to stop the watch for this client on exit
@@ -232,7 +231,7 @@ func (i *Installer) serverWatch(resp http.ResponseWriter, req *http.Request, cli
 				flusher.Flush()
 			}
 			record.SetCheckpoint(metrics.Serializer_Sent)
-			event.AddLatencyMetricsAllCheckpoints(record)
+			types.AddLatencyMetricsAllCheckpoints(record)
 		}
 	}
 }

@@ -19,7 +19,6 @@ package watch
 
 import (
 	"fmt"
-	"global-resource-service/resource-management/pkg/common-lib/types/event"
 	"io"
 	"k8s.io/klog/v2"
 	"sync"
@@ -34,7 +33,7 @@ type Decoder interface {
 	// Decode should return the type of event, the decoded object, or an error.
 	// An error will cause StreamWatcher to call Close(). Decode should block until
 	// it has data or an error occurs.
-	Decode() (action event.EventType, object *types.LogicalNode, err error)
+	Decode() (action types.EventType, object *types.LogicalNode, err error)
 
 	// Close should close the underlying io.Reader, signalling to the source of
 	// the stream that it is no longer being watched. Close() must cause any
@@ -55,7 +54,7 @@ type StreamWatcher struct {
 	sync.Mutex
 	source   Decoder
 	reporter Reporter
-	result   chan event.NodeEvent
+	result   chan types.NodeEvent
 	stopped  bool
 }
 
@@ -67,14 +66,14 @@ func NewStreamWatcher(d Decoder, r Reporter) *StreamWatcher {
 		// It's easy for a consumer to add buffering via an extra
 		// goroutine/channel, but impossible for them to remove it,
 		// so nonbuffered is better.
-		result: make(chan event.NodeEvent),
+		result: make(chan types.NodeEvent),
 	}
 	go sw.receive()
 	return sw
 }
 
 // ResultChan implements Interface.
-func (sw *StreamWatcher) ResultChan() <-chan event.NodeEvent {
+func (sw *StreamWatcher) ResultChan() <-chan types.NodeEvent {
 	return sw.result
 }
 
@@ -117,15 +116,15 @@ func (sw *StreamWatcher) receive() {
 				if net.IsProbableEOF(err) || net.IsTimeout(err) {
 					klog.V(5).Infof("Unable to decode an event from the watch stream: %v", err)
 				} else {
-					sw.result <- event.NodeEvent{
-						Type: event.Error,
+					sw.result <- types.NodeEvent{
+						Type: types.Error,
 						Node: sw.reporter.AsObject(fmt.Errorf("unable to decode an event from the watch stream: %v", err)),
 					}
 				}
 			}
 			return
 		}
-		sw.result <- event.NodeEvent{
+		sw.result <- types.NodeEvent{
 			Type: action,
 			Node: obj,
 		}

@@ -5,20 +5,11 @@ import (
 	"io"
 
 	"global-resource-service/resource-management/pkg/common-lib/types"
-	"global-resource-service/resource-management/pkg/common-lib/types/event"
 )
 
-type RegionNodeEvents [][]*event.NodeEvent
+type RegionNodeEvents []types.RpNodeEvents
 
 type PostCRVstatus bool
-
-// RRM: Resource Region Manager
-//
-type ResponseFromRRM struct {
-	RegionNodeEvents [][]*event.NodeEvent
-	RvMap            types.TransitResourceVersionMap
-	Length           uint64
-}
 
 // The type is for pulling data with batch from RRM - Resource Region Manager
 //
@@ -45,12 +36,6 @@ func ToJSON(i interface{}, w io.Writer) error {
 }
 
 func (p *RegionNodeEvents) ToJSON(w io.Writer) error {
-	e := json.NewEncoder(w)
-
-	return e.Encode(p)
-}
-
-func (p *ResponseFromRRM) ToJSON(w io.Writer) error {
 	e := json.NewEncoder(w)
 
 	return e.Encode(p)

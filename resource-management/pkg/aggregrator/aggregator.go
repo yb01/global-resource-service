@@ -2,7 +2,6 @@ package aggregrator
 
 import (
 	"encoding/json"
-	//	"global-resource-service/resource-management/pkg/common-lib/serializer/protobuf"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -15,7 +14,6 @@ import (
 	"global-resource-service/resource-management/pkg/common-lib/serializer"
 	localJson "global-resource-service/resource-management/pkg/common-lib/serializer/json"
 	"global-resource-service/resource-management/pkg/common-lib/types"
-	"global-resource-service/resource-management/pkg/common-lib/types/event"
 )
 
 type Aggregator struct {
@@ -30,14 +28,6 @@ type Aggregator struct {
 type ClientOfRRM struct {
 	BaseURL    string
 	HTTPClient *http.Client
-}
-
-// RRM: Resource Region Manager
-//
-type ResponseFromRRM struct {
-	RegionNodeEvents [][]*event.NodeEvent
-	RvMap            types.TransitResourceVersionMap
-	Length           uint64
 }
 
 // RRM: Resource Region Manager
@@ -81,7 +71,7 @@ func (a *Aggregator) Run() (err error) {
 			}()
 
 			var crv types.TransitResourceVersionMap
-			var regionNodeEvents [][]*event.NodeEvent
+			var regionNodeEvents []types.RpNodeEvents
 			var length uint64
 			var eventProcess bool
 
@@ -100,12 +90,12 @@ func (a *Aggregator) Run() (err error) {
 				regionNodeEvents, length = a.initPullOrSubsequentPull(c, DefaultBatchLength, crv)
 				if length != 0 {
 					pullEnds := time.Now()
-					klog.V(4).Infof("Total (%v) region node events are pulled successfully in (%v) RPs. pull duration", length, len(regionNodeEvents), pullEnds.Sub(pullStarts))
+					klog.V(4).Infof("Total (%v) region node events are pulled successfully in (%v) RPs. pull duration %v", length, len(regionNodeEvents), pullEnds.Sub(pullStarts))
 
 					// Convert 2D array to 1D array
-					minRecordNodeEvents := make([]*event.NodeEvent, 0, length)
+					minRecordNodeEvents := make([]*types.NodeEvent, 0, length)
 					for j := 0; j < len(regionNodeEvents); j++ {
-						minRecordNodeEvents = append(minRecordNodeEvents, regionNodeEvents[j]...)
+						minRecordNodeEvents = append(minRecordNodeEvents, regionNodeEvents[j].NodeEvents...)
 					}
 					klog.V(6).Infof("Total (%v) mini node events are converted successfully with length (%v)", len(minRecordNodeEvents), length)
 
@@ -148,7 +138,7 @@ func (a *Aggregator) createClient(url string) *ClientOfRRM {
 // or
 // Call the resource region manager's SubsequentPull method {url}/resources/subsequentpull when crv is not nil
 //
-func (a *Aggregator) initPullOrSubsequentPull(c *ClientOfRRM, batchLength uint64, crv types.TransitResourceVersionMap) ([][]*event.NodeEvent, uint64) {
+func (a *Aggregator) initPullOrSubsequentPull(c *ClientOfRRM, batchLength uint64, crv types.TransitResourceVersionMap) ([]types.RpNodeEvents, uint64) {
 	var path string
 
 	if len(crv) == 0 {
@@ -179,7 +169,7 @@ func (a *Aggregator) initPullOrSubsequentPull(c *ClientOfRRM, batchLength uint64
 		return nil, 0
 	}
 
-	var ResponseObject ResponseFromRRM
+	var ResponseObject types.ResponseFromRRM
 	_, err1 := serializer.Decode(bodyBytes, &ResponseObject)
 	if err1 != nil {
 		klog.Errorf("Error decode response body:", err)
@@ -189,11 +179,11 @@ func (a *Aggregator) initPullOrSubsequentPull(c *ClientOfRRM, batchLength uint64
 	// log out node ids for debugging some prolonged node transitions
 	if klog.V(9).Enabled() {
 		for rp, rpNodes := range ResponseObject.RegionNodeEvents {
-			if len(rpNodes) == 0 {
+			if len(rpNodes.NodeEvents) == 0 {
 				continue
 			}
-			buf := make([]string, len(rpNodes))
-			for i, node := range rpNodes {
+			buf := make([]string, len(rpNodes.NodeEvents))
+			for i, node := range rpNodes.NodeEvents {
 				buf[i] = node.Node.Id
 			}
 
@@ -203,9 +193,9 @@ func (a *Aggregator) initPullOrSubsequentPull(c *ClientOfRRM, batchLength uint64
 
 	if metrics.ResourceManagementMeasurement_Enabled {
 		for i := 0; i < len(ResponseObject.RegionNodeEvents); i++ {
-			for j := 0; j < len(ResponseObject.RegionNodeEvents[i]); j++ {
-				if ResponseObject.RegionNodeEvents[i][j] != nil {
-					ResponseObject.RegionNodeEvents[i][j].SetCheckpoint(metrics.Aggregator_Received)
+			for j := 0; j < len(ResponseObject.RegionNodeEvents[i].NodeEvents); j++ {
+				if ResponseObject.RegionNodeEvents[i].NodeEvents[j] != nil {
+					ResponseObject.RegionNodeEvents[i].NodeEvents[j].SetCheckpoint(metrics.Aggregator_Received)
 				}
 			}
 		}

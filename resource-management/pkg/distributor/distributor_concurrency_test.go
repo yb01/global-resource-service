@@ -9,8 +9,6 @@ import (
 	"time"
 
 	"global-resource-service/resource-management/pkg/common-lib/types"
-	"global-resource-service/resource-management/pkg/common-lib/types/event"
-	"global-resource-service/resource-management/pkg/common-lib/types/location"
 )
 
 func TestSingleRPMutipleClients_Workflow(t *testing.T) {
@@ -104,7 +102,7 @@ func TestSingleRPMutipleClients_Workflow(t *testing.T) {
 				// check each node event
 				nodeIds := make(map[string]bool)
 				for _, node := range nodes {
-					nodeLoc := types.RvLocation{Region: location.Region(node.GeoInfo.Region), Partition: location.ResourcePartition(node.GeoInfo.ResourcePartition)}
+					nodeLoc := types.RvLocation{Region: types.Region(node.GeoInfo.Region), Partition: types.ResourcePartition(node.GeoInfo.ResourcePartition)}
 					assert.NotNil(t, nodeLoc)
 					assert.True(t, latestRVs[nodeLoc] >= node.GetResourceVersionInt64())
 					if _, isOK := nodeIds[node.Id]; isOK {
@@ -121,7 +119,7 @@ func TestSingleRPMutipleClients_Workflow(t *testing.T) {
 			allWaitGroup := new(sync.WaitGroup)
 			start = time.Now()
 			for i := 0; i < tt.clientNum; i++ {
-				watchCh := make(chan *event.NodeEvent)
+				watchCh := make(chan *types.NodeEvent)
 				err := distributor.Watch(clientIds[i], latestRVsByClient[i], watchCh, stopCh)
 				if err != nil {
 					assert.Fail(t, "Encountered error while building watch connection.", "Encountered error while building watch connection. Error %v", err)
@@ -129,11 +127,11 @@ func TestSingleRPMutipleClients_Workflow(t *testing.T) {
 				}
 				allWaitGroup.Add(1)
 
-				go func(expectedEventCount int, watchCh chan *event.NodeEvent, wg *sync.WaitGroup) {
+				go func(expectedEventCount int, watchCh chan *types.NodeEvent, wg *sync.WaitGroup) {
 					eventCount := 0
 
 					for e := range watchCh {
-						assert.Equal(t, event.Modified, e.Type)
+						assert.Equal(t, types.Modified, e.Type)
 						eventCount++
 
 						if eventCount >= expectedEventCount {
@@ -148,13 +146,13 @@ func TestSingleRPMutipleClients_Workflow(t *testing.T) {
 			for i := 0; i < tt.clientNum; i++ {
 				go func(expectedEventCount int, nodes []*types.LogicalNode, clientId string) {
 					for j := 0; j < expectedEventCount/len(nodes)+2; j++ {
-						updateNodeEvents := make([]*event.NodeEvent, len(nodes))
+						updateNodeEvents := make([]*types.NodeEvent, len(nodes))
 						for k := 0; k < len(nodes); k++ {
 							rvToGenerate += 1
 
 							newNode := nodes[k].Copy()
 							newNode.ResourceVersion = strconv.Itoa(rvToGenerate)
-							updateNodeEvents[k] = event.NewNodeEvent(newNode, event.Modified)
+							updateNodeEvents[k] = types.NewNodeEvent(newNode, types.Modified)
 						}
 						result, rvMap := distributor.ProcessEvents(updateNodeEvents)
 						assert.True(t, result)
@@ -218,13 +216,13 @@ func TestMultipleRPsMutipleClients_Workflow(t *testing.T) {
 			defer tearDown()
 
 			// create nodes
-			eventsAdd := make([][][]*event.NodeEvent, tt.regionNum)
+			eventsAdd := make([][][]*types.NodeEvent, tt.regionNum)
 			for i := 0; i < tt.regionNum; i++ {
-				regionName := location.Regions[i]
-				eventsAdd[i] = make([][]*event.NodeEvent, tt.rpNum)
+				regionName := types.Regions[i]
+				eventsAdd[i] = make([][]*types.NodeEvent, tt.rpNum)
 				for j := 0; j < tt.rpNum; j++ {
-					rpName := location.ResourcePartitions[j]
-					loc := location.NewLocation(regionName, rpName)
+					rpName := types.ResourcePartitions[j]
+					loc := types.NewLocation(regionName, rpName)
 
 					eventsAdd[i][j] = generateAddNodeEvent(tt.hostPerRP, loc)
 				}
@@ -236,7 +234,7 @@ func TestMultipleRPsMutipleClients_Workflow(t *testing.T) {
 			start := time.Now()
 			for i := 0; i < tt.regionNum; i++ {
 				for j := 0; j < tt.rpNum; j++ {
-					go func(done *sync.WaitGroup, events []*event.NodeEvent) {
+					go func(done *sync.WaitGroup, events []*types.NodeEvent) {
 						result, rvMap := distributor.ProcessEvents(events)
 						done.Done()
 						assert.True(t, result)
@@ -289,7 +287,7 @@ func TestMultipleRPsMutipleClients_Workflow(t *testing.T) {
 					// check each node event
 					nodeIds := make(map[string]bool)
 					for _, node := range nodes {
-						nodeLoc := types.RvLocation{Region: location.Region(node.GeoInfo.Region), Partition: location.ResourcePartition(node.GeoInfo.ResourcePartition)}
+						nodeLoc := types.RvLocation{Region: types.Region(node.GeoInfo.Region), Partition: types.ResourcePartition(node.GeoInfo.ResourcePartition)}
 						assert.NotNil(t, nodeLoc)
 						assert.True(t, latestRVs[nodeLoc] >= node.GetResourceVersionInt64())
 						if _, isOK := nodeIds[node.Id]; isOK {
@@ -308,7 +306,7 @@ func TestMultipleRPsMutipleClients_Workflow(t *testing.T) {
 			allWaitGroup := new(sync.WaitGroup)
 			start = time.Now()
 			for i := 0; i < tt.clientNum; i++ {
-				watchCh := make(chan *event.NodeEvent)
+				watchCh := make(chan *types.NodeEvent)
 				stopCh := make(chan struct{})
 				err := distributor.Watch(clientIds[i], latestRVsByClient[i], watchCh, stopCh)
 				if err != nil {
@@ -317,11 +315,11 @@ func TestMultipleRPsMutipleClients_Workflow(t *testing.T) {
 				}
 				allWaitGroup.Add(1)
 
-				go func(expectedEventCount int, watchCh chan *event.NodeEvent, wg *sync.WaitGroup) {
+				go func(expectedEventCount int, watchCh chan *types.NodeEvent, wg *sync.WaitGroup) {
 					eventCount := 0
 
 					for e := range watchCh {
-						assert.Equal(t, event.Modified, e.Type)
+						assert.Equal(t, types.Modified, e.Type)
 						eventCount++
 
 						if eventCount >= expectedEventCount {
@@ -341,12 +339,12 @@ func TestMultipleRPsMutipleClients_Workflow(t *testing.T) {
 					eventCount := 0
 
 					for j := 0; j < expectedEventCount/len(nodes)+2; j++ {
-						updateNodeEvents := make([]*event.NodeEvent, len(nodes))
+						updateNodeEvents := make([]*types.NodeEvent, len(nodes))
 						for k := 0; k < len(nodes); k++ {
 							rvToGenerate += 1
 							newNode := nodes[k].Copy()
 							newNode.ResourceVersion = strconv.Itoa(rvToGenerate)
-							updateNodeEvents[k] = event.NewNodeEvent(newNode, event.Modified)
+							updateNodeEvents[k] = types.NewNodeEvent(newNode, types.Modified)
 
 							eventCount++
 							if eventCount >= expectedEventCount {
@@ -444,7 +442,7 @@ func TestProcessEvents_TwoRPs_AddNodes_Sequential(t *testing.T) {
 	// generate add node events
 	for i := 0; i < len(nodeCounts); i++ {
 		eventsAdd1 := generateAddNodeEvent(nodeCounts[i], defaultLocBeijing_RP1)
-		eventsAdd2 := generateAddNodeEvent(nodeCounts[i], location.NewLocation(location.Shanghai, location.ResourcePartition2))
+		eventsAdd2 := generateAddNodeEvent(nodeCounts[i], types.NewLocation(types.Shanghai, types.ResourcePartition2))
 		start := time.Now()
 		distributor.ProcessEvents(eventsAdd1)
 		_, rvMap := distributor.ProcessEvents(eventsAdd2)
@@ -526,18 +524,18 @@ func TestProcessEvents_TwoRPs_Concurrent(t *testing.T) {
 	// generate add node events
 	for i := 0; i < len(nodeCounts); i++ {
 		eventsAdd1 := generateAddNodeEvent(nodeCounts[i], defaultLocBeijing_RP1)
-		eventsAdd2 := generateAddNodeEvent(nodeCounts[i], location.NewLocation(location.Shanghai, location.ResourcePartition2))
+		eventsAdd2 := generateAddNodeEvent(nodeCounts[i], types.NewLocation(types.Shanghai, types.ResourcePartition2))
 		start := time.Now()
 
 		wg := new(sync.WaitGroup)
 		wg.Add(2)
 
-		go func(done *sync.WaitGroup, eventsToProcess []*event.NodeEvent) {
+		go func(done *sync.WaitGroup, eventsToProcess []*types.NodeEvent) {
 			distributor.ProcessEvents(eventsToProcess)
 			done.Done()
 		}(wg, eventsAdd1)
 
-		go func(done *sync.WaitGroup, eventsToProcess []*event.NodeEvent) {
+		go func(done *sync.WaitGroup, eventsToProcess []*types.NodeEvent) {
 			distributor.ProcessEvents(eventsToProcess)
 			done.Done()
 		}(wg, eventsAdd2)

@@ -134,7 +134,7 @@ func (c *rmsClient) List(clientId string, opts ListOptions) ([]*types.LogicalNod
 	req = req.Name(c.Id)
 	req = req.Timeout(c.config.RequestTimeout)
 	req = req.Param("limit", strconv.Itoa(opts.Limit))
-	
+
 	respRet, err := req.DoRaw()
 	if err != nil {
 		return nil, nil, err

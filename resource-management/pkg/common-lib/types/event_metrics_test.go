@@ -1,4 +1,4 @@
-package event
+package types
 
 import (
 	"github.com/google/uuid"
@@ -8,11 +8,9 @@ import (
 	"time"
 
 	"global-resource-service/resource-management/pkg/common-lib/metrics"
-	"global-resource-service/resource-management/pkg/common-lib/types"
-	"global-resource-service/resource-management/pkg/common-lib/types/location"
 )
 
-var defaultLocBeijing_RP1 = location.NewLocation(location.Beijing, location.ResourcePartition1)
+var defaultLocBeijing_RP1 = NewLocation(Beijing, ResourcePartition1)
 var rvToGenerate = 0
 
 func Test_PrintLatencyReport(t *testing.T) {
@@ -29,14 +27,14 @@ func Test_PrintLatencyReport(t *testing.T) {
 	PrintLatencyReport()
 }
 
-func createRandomNode(rv int, loc *location.Location) *types.LogicalNode {
+func createRandomNode(rv int, loc *Location) *LogicalNode {
 	id := uuid.New()
-	return &types.LogicalNode{
+	return &LogicalNode{
 		Id:              id.String(),
 		ResourceVersion: strconv.Itoa(rv),
-		GeoInfo: types.NodeGeoInfo{
-			Region:            types.RegionName(loc.GetRegion()),
-			ResourcePartition: types.ResourcePartitionName(loc.GetResourcePartition()),
+		GeoInfo: NodeGeoInfo{
+			Region:            RegionName(loc.GetRegion()),
+			ResourcePartition: ResourcePartitionName(loc.GetResourcePartition()),
 		},
 		LastUpdatedTime: time.Now().UTC(),
 	}

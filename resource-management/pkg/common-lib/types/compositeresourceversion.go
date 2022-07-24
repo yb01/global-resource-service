@@ -2,8 +2,6 @@ package types
 
 import (
 	"encoding/json"
-
-	"global-resource-service/resource-management/pkg/common-lib/types/location"
 )
 
 type CompositeResourceVersion struct {
@@ -12,9 +10,12 @@ type CompositeResourceVersion struct {
 	ResourceVersion     uint64
 }
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+//RvLocation is used in rv map for rest apis
 type RvLocation struct {
-	Region    location.Region
-	Partition location.ResourcePartition
+	Region    Region
+	Partition ResourcePartition
 }
 
 func (loc RvLocation) MarshalText() (text []byte, err error) {
@@ -27,18 +28,20 @@ func (loc *RvLocation) UnmarshalText(text []byte) error {
 	return json.Unmarshal(text, (*l)(loc))
 }
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
 // Map from (regionId, ResourcePartitionId) to resourceVersion
 // used in REST API calls
 type TransitResourceVersionMap map[RvLocation]uint64
 
 // internally used in the eventqueue used in WATCH of nodes
-type InternalResourceVersionMap map[location.Location]uint64
+type InternalResourceVersionMap map[Location]uint64
 
 func ConvertToInternalResourceVersionMap(rvs TransitResourceVersionMap) InternalResourceVersionMap {
 	internalMap := make(InternalResourceVersionMap)
 
 	for k, v := range rvs {
-		internalMap[*location.NewLocation(k.Region, k.Partition)] = v
+		internalMap[*NewLocation(k.Region, k.Partition)] = v
 	}
 
 	return internalMap

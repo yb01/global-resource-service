@@ -1,14 +1,10 @@
-package event
+package types
 
 import (
 	"time"
 
 	"global-resource-service/resource-management/pkg/common-lib/metrics"
-	"global-resource-service/resource-management/pkg/common-lib/types"
 )
-
-// EventType defines the possible types of events.
-type EventType string
 
 const (
 	Added    EventType = "ADDED"
@@ -18,13 +14,7 @@ const (
 	Error    EventType = "ERROR"
 )
 
-type NodeEvent struct {
-	Type        EventType
-	Node        *types.LogicalNode
-	checkpoints []time.Time
-}
-
-func NewNodeEvent(node *types.LogicalNode, eventType EventType) *NodeEvent {
+func NewNodeEvent(node *LogicalNode, eventType EventType) *NodeEvent {
 	return &NodeEvent{
 		Type:        eventType,
 		Node:        node,

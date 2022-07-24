@@ -6,7 +6,6 @@ import (
 
 	"global-resource-service/resource-management/pkg/common-lib/interfaces/store"
 	"global-resource-service/resource-management/pkg/common-lib/types"
-	"global-resource-service/resource-management/pkg/common-lib/types/location"
 )
 
 var GR *Goredis
@@ -85,7 +84,7 @@ func TestPersistNodes(t *testing.T) {
 //
 func TestPersistNodeStoreStatus(t *testing.T) {
 	var CRV = make(types.TransitResourceVersionMap, 1)
-	testLocation := types.RvLocation{Region: location.Beijing, Partition: location.ResourcePartition1}
+	testLocation := types.RvLocation{Region: types.Beijing, Partition: types.ResourcePartition1}
 	CRV[testLocation] = 1000
 
 	testCase0 := &store.NodeStoreStatus{
@@ -136,7 +135,7 @@ func TestPersistVirtualNodesAssignments(t *testing.T) {
 	vNodeToSave := &store.VirtualNodeConfig{
 		Lowerbound: 1000.00,
 		Upperbound: 2000.00,
-		Location:   *location.NewLocation(location.Beijing, location.ResourcePartition1),
+		Location:   *types.NewLocation(types.Beijing, types.ResourcePartition1),
 	}
 
 	vNodeConfigs[0] = vNodeToSave

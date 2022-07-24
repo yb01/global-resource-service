@@ -9,9 +9,6 @@ import (
 	"k8s.io/klog/v2"
 
 	"global-resource-service/resource-management/pkg/common-lib/types"
-	"global-resource-service/resource-management/pkg/common-lib/types/event"
-	"global-resource-service/resource-management/pkg/common-lib/types/location"
-
 	simulatorTypes "global-resource-service/resource-management/test/resourceRegionMgrSimulator/types"
 )
 
@@ -35,7 +32,7 @@ const at7thMin1k = 1000
 //
 func Init(regionName string, rpNum, nodesPerRP int) {
 	RegionNodeEventsList = generateAddedNodeEvents(regionName, rpNum, nodesPerRP)
-	RegionId = int(location.GetRegionFromRegionName(regionName))
+	RegionId = int(types.GetRegionFromRegionName(regionName))
 	RpNum = rpNum
 	NodesPerRP = nodesPerRP
 }
@@ -88,21 +85,21 @@ func GetRegionNodeModifiedEventsCRV(rvs types.TransitResourceVersionMap) (simula
 
 	var count uint64 = 0
 	for j := 0; j < RpNum; j++ {
-		pulledNodeListEventsPerRP := make([]*event.NodeEvent, NodesPerRP)
+		pulledNodeListEventsPerRP := types.RpNodeEvents{NodeEvents: make([]*types.NodeEvent, NodesPerRP)}
 		indexPerRP := 0
 		for i := 0; i < NodesPerRP; i++ {
-			region := snapshotNodeListEvents[j][i].Node.GeoInfo.Region
-			rp := snapshotNodeListEvents[j][i].Node.GeoInfo.ResourcePartition
-			loc := types.RvLocation{Region: location.Region(region), Partition: location.ResourcePartition(rp)}
+			region := snapshotNodeListEvents[j].NodeEvents[i].Node.GeoInfo.Region
+			rp := snapshotNodeListEvents[j].NodeEvents[i].Node.GeoInfo.ResourcePartition
+			loc := types.RvLocation{Region: types.Region(region), Partition: types.ResourcePartition(rp)}
 
-			if snapshotNodeListEvents[j][i].Node.GetResourceVersionInt64() > rvs[loc] {
+			if snapshotNodeListEvents[j].NodeEvents[i].Node.GetResourceVersionInt64() > rvs[loc] {
 				count += 1
-				pulledNodeListEventsPerRP[indexPerRP] = snapshotNodeListEvents[j][i]
+				pulledNodeListEventsPerRP.NodeEvents[indexPerRP] = snapshotNodeListEvents[j].NodeEvents[i]
 				indexPerRP += 1
 			}
 		}
 
-		pulledNodeListEvents[j] = pulledNodeListEventsPerRP[:indexPerRP]
+		pulledNodeListEvents[j] = pulledNodeListEventsPerRP
 	}
 
 	klog.V(9).Infof("Total (%v) Modified events are to be pulled", count)
@@ -116,22 +113,22 @@ func GetRegionNodeModifiedEventsCRV(rvs types.TransitResourceVersionMap) (simula
 // This function is used to initialize the region node added event
 //
 func generateAddedNodeEvents(regionName string, rpNum, nodesPerRP int) simulatorTypes.RegionNodeEvents {
-	regionId := location.GetRegionFromRegionName(regionName)
+	regionId := types.GetRegionFromRegionName(regionName)
 	eventsAdd := make(simulatorTypes.RegionNodeEvents, rpNum)
 
 	for j := 0; j < rpNum; j++ {
-		rpName := location.ResourcePartitions[j]
-		loc := location.NewLocation(regionId, rpName)
+		rpName := types.ResourcePartitions[j]
+		loc := types.NewLocation(regionId, rpName)
 
 		// Initialize the resource version starting from 0 for each RP
 		var rvToGenerateRPs = 0
-		eventsAdd[j] = make([]*event.NodeEvent, nodesPerRP)
+		eventsAdd[j] = types.RpNodeEvents{NodeEvents: make([]*types.NodeEvent, nodesPerRP)}
 		for i := 0; i < nodesPerRP; i++ {
 			rvToGenerateRPs += 1
 
 			node := createRandomNode(rvToGenerateRPs, loc)
-			nodeEvent := event.NewNodeEvent(node, event.Added)
-			eventsAdd[j][i] = nodeEvent
+			nodeEvent := types.NewNodeEvent(node, types.Added)
+			eventsAdd[j].NodeEvents[i] = nodeEvent
 		}
 
 	}
@@ -143,7 +140,7 @@ func generateAddedNodeEvents(regionName string, rpNum, nodesPerRP int) simulator
 func makeDataUpdate(changesThreshold int) {
 	// Calculate how many node changes per RP
 	var nodeChangesPerRP = 1
-	if (changesThreshold >= 2 * RpNum) {
+	if changesThreshold >= 2*RpNum {
 		nodeChangesPerRP = changesThreshold / RpNum
 	}
 
@@ -153,9 +150,9 @@ func makeDataUpdate(changesThreshold int) {
 
 		// Search the nodes in the RP to get the highestRV
 		var highestRVForRP uint64 = 0
-		length := len(eventsPerRP)
+		length := len(eventsPerRP.NodeEvents)
 		for k := 0; k < length; k++ {
-			currentResourceVersion := eventsPerRP[k].Node.GetResourceVersionInt64()
+			currentResourceVersion := eventsPerRP.NodeEvents[k].Node.GetResourceVersionInt64()
 			if highestRVForRP < currentResourceVersion {
 				highestRVForRP = currentResourceVersion
 			}
@@ -167,7 +164,7 @@ func makeDataUpdate(changesThreshold int) {
 		for count < nodeChangesPerRP {
 			// Randonly create data update per RP node events list
 			i := int(rand.Intn(length))
-			node := eventsPerRP[i].Node
+			node := eventsPerRP.NodeEvents[i].Node
 
 			// special case: Consider 5000 changes per RP for 500 nodes per RP
 			// each node has 10 changes within this cycle
@@ -180,8 +177,8 @@ func makeDataUpdate(changesThreshold int) {
 			// record the time to change resource version in resource partition
 			node.LastUpdatedTime = time.Now().UTC()
 
-			newEvent := event.NewNodeEvent(node, event.Modified)
-			RegionNodeEventsList[j][i] = newEvent
+			newEvent := types.NewNodeEvent(node, types.Modified)
+			RegionNodeEventsList[j].NodeEvents[i] = newEvent
 
 			count++
 		}
@@ -192,7 +189,7 @@ func makeDataUpdate(changesThreshold int) {
 
 // Create logical node with random UUID
 //
-func createRandomNode(rv int, loc *location.Location) *types.LogicalNode {
+func createRandomNode(rv int, loc *types.Location) *types.LogicalNode {
 	id := uuid.New()
 
 	return &types.LogicalNode{
@@ -217,7 +214,7 @@ func createRandomNode(rv int, loc *location.Location) *types.LogicalNode {
 			MilliCPU:         int64(rand.Intn(200) + 20),
 			Memory:           int64(rand.Intn(2000)),
 			EphemeralStorage: int64(rand.Intn(2000000)),
-			AllowedPodNumber: int(rand.Intn(20000000)),
+			AllowedPodNumber: int32(rand.Intn(20000000)),
 			ScalarResources: map[types.ResourceName]int64{
 				"GPU":  int64(rand.Intn(200)),
 				"FPGA": int64(rand.Intn(200)),

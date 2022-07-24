@@ -9,8 +9,6 @@ import (
 	"time"
 
 	"global-resource-service/resource-management/pkg/common-lib/types"
-	"global-resource-service/resource-management/pkg/common-lib/types/event"
-	"global-resource-service/resource-management/pkg/common-lib/types/location"
 	"global-resource-service/resource-management/pkg/distributor/cache"
 	"global-resource-service/resource-management/pkg/distributor/storage"
 )
@@ -20,9 +18,9 @@ var rvToGenerate = 0
 
 var singleTestLock = sync.Mutex{}
 
-var defaultLocBeijing_RP1 = location.NewLocation(location.Beijing, location.ResourcePartition1)
-var defaultRegion = location.Beijing
-var defaultPartition = location.ResourcePartition1
+var defaultLocBeijing_RP1 = types.NewLocation(types.Beijing, types.ResourcePartition1)
+var defaultRegion = types.Beijing
+var defaultPartition = types.ResourcePartition1
 
 const defaultVirtualStoreNumPerRP = 200 // 10K per resource partition, 50 hosts per virtual node store
 
@@ -74,7 +72,7 @@ func TestDistributorInit(t *testing.T) {
 		assert.NotEqual(t, lowerBound, upperBound, "Expecting lower bound not equal to upper bound for virtual store %d. Got hash range (%f, %f]", i, lowerBound, upperBound)
 		lower = upperBound
 		if i == len(*defaultNodeStores)-1 {
-			assert.Equal(t, location.RingRange, upperBound, "Expecting last virtual store upper bound equals %f but got %f", location.RingRange, upperBound)
+			assert.Equal(t, types.RingRange, upperBound, "Expecting last virtual store upper bound equals %f but got %f", types.RingRange, upperBound)
 		}
 
 		loc := store.GetLocation()
@@ -85,7 +83,7 @@ func TestDistributorInit(t *testing.T) {
 	}
 }
 
-func measureProcessEvent(t *testing.T, dis *ResourceDistributor, eventType string, events []*event.NodeEvent, previousNodeCount int) {
+func measureProcessEvent(t *testing.T, dis *ResourceDistributor, eventType string, events []*types.NodeEvent, previousNodeCount int) {
 	start := time.Now()
 	result, rvMap := dis.ProcessEvents(events)
 	duration := time.Since(start)
@@ -158,19 +156,19 @@ func TestAddNodes(t *testing.T) {
 	}
 }
 
-func generateAddNodeEvent(eventNum int, loc *location.Location) []*event.NodeEvent {
-	result := make([]*event.NodeEvent, eventNum)
+func generateAddNodeEvent(eventNum int, loc *types.Location) []*types.NodeEvent {
+	result := make([]*types.NodeEvent, eventNum)
 	for i := 0; i < eventNum; i++ {
 		rvToGenerate += 1
 		node := createRandomNode(rvToGenerate, loc)
-		nodeEvent := event.NewNodeEvent(node, event.Added)
+		nodeEvent := types.NewNodeEvent(node, types.Added)
 		result[i] = nodeEvent
 	}
 	return result
 }
 
-func generateUpdateNodeEvents(originalEvents []*event.NodeEvent) []*event.NodeEvent {
-	result := make([]*event.NodeEvent, len(originalEvents))
+func generateUpdateNodeEvents(originalEvents []*types.NodeEvent) []*types.NodeEvent {
+	result := make([]*types.NodeEvent, len(originalEvents))
 	for i := 0; i < len(originalEvents); i++ {
 		rvToGenerate += 1
 
@@ -183,25 +181,25 @@ func generateUpdateNodeEvents(originalEvents []*event.NodeEvent) []*event.NodeEv
 			},
 		}
 
-		newEvent := event.NewNodeEvent(lNode, event.Modified)
+		newEvent := types.NewNodeEvent(lNode, types.Modified)
 		result[i] = newEvent
 	}
 	return result
 }
 
-func generatedUpdateNodeEventsFromNodeList(nodes []*types.LogicalNode) []*event.NodeEvent {
-	result := make([]*event.NodeEvent, len(nodes))
+func generatedUpdateNodeEventsFromNodeList(nodes []*types.LogicalNode) []*types.NodeEvent {
+	result := make([]*types.NodeEvent, len(nodes))
 	for i := 0; i < len(nodes); i++ {
 		rvToGenerate += 1
 		node := nodes[i].Copy()
 		node.ResourceVersion = strconv.Itoa(rvToGenerate)
-		newEvent := event.NewNodeEvent(node, event.Modified)
+		newEvent := types.NewNodeEvent(node, types.Modified)
 		result[i] = newEvent
 	}
 	return result
 }
 
-func createRandomNode(rv int, loc *location.Location) *types.LogicalNode {
+func createRandomNode(rv int, loc *types.Location) *types.LogicalNode {
 	id := uuid.New()
 	return &types.LogicalNode{
 		Id:              id.String(),
@@ -339,7 +337,7 @@ func TestRegistrationWorkflow(t *testing.T) {
 	// check each node event
 	nodeIds := make(map[string]bool)
 	for _, node := range nodes {
-		nodeLoc := types.RvLocation{Region: location.Region(node.GeoInfo.Region), Partition: location.ResourcePartition(node.GeoInfo.ResourcePartition)}
+		nodeLoc := types.RvLocation{Region: types.Region(node.GeoInfo.Region), Partition: types.ResourcePartition(node.GeoInfo.ResourcePartition)}
 		assert.NotNil(t, nodeLoc)
 		assert.True(t, latestRVs[nodeLoc] >= node.GetResourceVersionInt64())
 		if _, isOK := nodeIds[node.Id]; isOK {
@@ -355,13 +353,13 @@ func TestRegistrationWorkflow(t *testing.T) {
 	updateNodeEvents := generatedUpdateNodeEventsFromNodeList(nodes)
 	result2, rvMap2 := distributor.ProcessEvents(updateNodeEvents)
 	assert.True(t, result2, "Expecting update nodes successfully")
-	loc := types.RvLocation{Region: location.Region(nodes[0].GeoInfo.Region), Partition: location.ResourcePartition(nodes[0].GeoInfo.ResourcePartition)}
+	loc := types.RvLocation{Region: types.Region(nodes[0].GeoInfo.Region), Partition: types.ResourcePartition(nodes[0].GeoInfo.ResourcePartition)}
 
 	assert.Equal(t, uint64(rvToGenerate), rvMap2[loc])
 	assert.Equal(t, oldNodeRV, nodes[0].GetResourceVersionInt64(), "Expecting listed nodes are snapshoted and cannot be affected by update")
 
 	// client watch node update
-	watchCh := make(chan *event.NodeEvent)
+	watchCh := make(chan *types.NodeEvent)
 	stopCh := make(chan struct{})
 	err = distributor.Watch(clientId, latestRVs, watchCh, stopCh)
 	if err != nil {
@@ -370,8 +368,8 @@ func TestRegistrationWorkflow(t *testing.T) {
 	}
 	watchedEventCount := 0
 	for e := range watchCh {
-		assert.Equal(t, event.Modified, e.Type)
-		nodeLoc := types.RvLocation{Region: location.Region(e.Node.GeoInfo.Region), Partition: location.ResourcePartition(e.Node.GeoInfo.ResourcePartition)}
+		assert.Equal(t, types.Modified, e.Type)
+		nodeLoc := types.RvLocation{Region: types.Region(e.Node.GeoInfo.Region), Partition: types.ResourcePartition(e.Node.GeoInfo.ResourcePartition)}
 
 		assert.Equal(t, loc, nodeLoc)
 		watchedEventCount++
@@ -414,7 +412,7 @@ func TestWatchRenewal(t *testing.T) {
 	// check each node event
 	nodeIds := make(map[string]bool)
 	for _, node := range nodes {
-		nodeLoc := types.RvLocation{Region: location.Region(node.GeoInfo.Region), Partition: location.ResourcePartition(node.GeoInfo.ResourcePartition)}
+		nodeLoc := types.RvLocation{Region: types.Region(node.GeoInfo.Region), Partition: types.ResourcePartition(node.GeoInfo.ResourcePartition)}
 		assert.NotNil(t, nodeLoc)
 		assert.True(t, latestRVs[nodeLoc] >= node.GetResourceVersionInt64())
 		if _, isOK := nodeIds[node.Id]; isOK {
@@ -424,10 +422,10 @@ func TestWatchRenewal(t *testing.T) {
 		}
 	}
 	assert.Equal(t, len(nodes), len(nodeIds))
-	loc := location.NewLocation(location.Region(nodes[0].GeoInfo.Region), location.ResourcePartition(nodes[0].GeoInfo.ResourcePartition))
+	loc := types.NewLocation(types.Region(nodes[0].GeoInfo.Region), types.ResourcePartition(nodes[0].GeoInfo.ResourcePartition))
 
 	// client watch node update
-	watchCh := make(chan *event.NodeEvent)
+	watchCh := make(chan *types.NodeEvent)
 	stopCh := make(chan struct{})
 	err = distributor.Watch(clientId, latestRVs, watchCh, stopCh)
 	if err != nil {
@@ -458,7 +456,7 @@ func TestWatchRenewal(t *testing.T) {
 	t.Logf("Watch renewal .....................")
 	close(stopCh)
 	time.Sleep(100 * time.Millisecond) // note here sleep is necessary. otherwise previous watch channel was not successfully discarded
-	watchCh2 := make(chan *event.NodeEvent)
+	watchCh2 := make(chan *types.NodeEvent)
 	stopCh2 := make(chan struct{})
 	err = distributor.Watch(clientId, rvMap2, watchCh2, stopCh2)
 	if err != nil {
@@ -486,12 +484,12 @@ func TestWatchRenewal(t *testing.T) {
 	t.Logf("Latest rvs after updates: %v\n", rvMap3)
 }
 
-func watch(t *testing.T, wg *sync.WaitGroup, lastRVResult *int, watchedEventCount *int, expectedEventCount int, watchCh chan *event.NodeEvent, loc *location.Location) {
+func watch(t *testing.T, wg *sync.WaitGroup, lastRVResult *int, watchedEventCount *int, expectedEventCount int, watchCh chan *types.NodeEvent, loc *types.Location) {
 	go func(wg *sync.WaitGroup, t *testing.T, lastRVResult *int, watchedEventCount *int, expectedEventCount int) {
 		lastRV := int(0)
 		for e := range watchCh {
-			assert.Equal(t, event.Modified, e.Type)
-			nodeLoc := location.NewLocation(location.Region(e.Node.GeoInfo.Region), location.ResourcePartition(e.Node.GeoInfo.ResourcePartition))
+			assert.Equal(t, types.Modified, e.Type)
+			nodeLoc := types.NewLocation(types.Region(e.Node.GeoInfo.Region), types.ResourcePartition(e.Node.GeoInfo.ResourcePartition))
 			assert.Equal(t, loc, nodeLoc)
 			*watchedEventCount++
 

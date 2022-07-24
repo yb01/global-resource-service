@@ -1,7 +1,7 @@
 package watch
 
 import (
-	"global-resource-service/resource-management/pkg/common-lib/types/event"
+	"global-resource-service/resource-management/pkg/common-lib/types"
 )
 
 // Interface can be implemented by anything that knows how to watch and report changes.
@@ -13,16 +13,16 @@ type Interface interface {
 	// ResultChan returns a chan which will receive all the events. If an error occurs
 	// or Stop() is called, the implementation will close this channel and
 	// release any resources used by the watch.
-	ResultChan() <-chan event.NodeEvent
+	ResultChan() <-chan types.NodeEvent
 }
 
-type emptyWatch chan event.NodeEvent
+type emptyWatch chan types.NodeEvent
 
 // NewEmptyWatch returns a watch interface that returns no results and is closed.
 // May be used in certain error conditions where no information is available but
 // an error is not warranted.
 func NewEmptyWatch() Interface {
-	ch := make(chan event.NodeEvent)
+	ch := make(chan types.NodeEvent)
 	close(ch)
 	return emptyWatch(ch)
 }
@@ -32,6 +32,6 @@ func (w emptyWatch) Stop() {
 }
 
 // ResultChan implements Interface
-func (w emptyWatch) ResultChan() <-chan event.NodeEvent {
-	return chan event.NodeEvent(w)
+func (w emptyWatch) ResultChan() <-chan types.NodeEvent {
+	return chan types.NodeEvent(w)
 }

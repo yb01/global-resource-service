@@ -3,13 +3,12 @@ package types
 import (
 	"encoding/json"
 	"github.com/stretchr/testify/assert"
-	"global-resource-service/resource-management/pkg/common-lib/types/location"
 	"testing"
 )
 
 func TestResourceVersionMap_Marshall_UnMarshall(t *testing.T) {
 	rvs := make(TransitResourceVersionMap)
-	loc := RvLocation{Region: location.Beijing, Partition: location.ResourcePartition1}
+	loc := RvLocation{Region: Beijing, Partition: ResourcePartition1}
 	rvs[loc] = 100
 
 	// marshall

@@ -2,13 +2,12 @@ package store
 
 import (
 	"global-resource-service/resource-management/pkg/common-lib/types"
-	"global-resource-service/resource-management/pkg/common-lib/types/location"
 )
 
 const (
 	Preserve_VirtualNodesAssignments_KeyPrefix = "VirtualNodesAssignments"
 	Preserve_NodeStoreStatus_KeyPrefix         = "NodeStoreStatus"
-	Preserve_Client_KeyPrefix = "Client"
+	Preserve_Client_KeyPrefix                  = "Client"
 )
 
 type StoreInterface interface {
@@ -55,5 +54,5 @@ func (assignment *VirtualNodeAssignment) GetKey() string {
 type VirtualNodeConfig struct {
 	Lowerbound float64
 	Upperbound float64
-	Location   location.Location
+	Location   types.Location
 }

@@ -13,7 +13,6 @@ import (
 	"global-resource-service/resource-management/pkg/clientSdk/tools/cache"
 	utilruntime "global-resource-service/resource-management/pkg/clientSdk/util/runtime"
 	"global-resource-service/resource-management/pkg/common-lib/types"
-	"global-resource-service/resource-management/pkg/common-lib/types/event"
 	"global-resource-service/resource-management/test/e2e/stats"
 )
 
@@ -186,13 +185,13 @@ func watchNodes(client rmsclient.RmsInterface, clientId string, crv types.Transi
 				}
 				logIfProlonged(&record, time.Now().UTC(), watchStats)
 				switch record.Type {
-				case event.Added:
+				case types.Added:
 					store.Add(*record.Node)
 					watchStats.NumberOfAddedNodes++
-				case event.Modified:
+				case types.Modified:
 					store.Update(*record.Node)
 					watchStats.NumberOfUpdatedNodes++
-				case event.Deleted:
+				case types.Deleted:
 					store.Delete(*record.Node)
 					watchStats.NumberOfDeletedNodes++
 
@@ -209,7 +208,7 @@ func watchNodes(client rmsclient.RmsInterface, clientId string, crv types.Transi
 	return
 }
 
-func logIfProlonged(record *event.NodeEvent, t time.Time, ws *stats.WatchStats) {
+func logIfProlonged(record *types.NodeEvent, t time.Time, ws *stats.WatchStats) {
 	d := t.Sub(record.Node.LastUpdatedTime)
 	if d > stats.LongWatchThreshold {
 		klog.Infof("Prolonged watch node from server: %v with time (%v)", record.Node.Id, d)

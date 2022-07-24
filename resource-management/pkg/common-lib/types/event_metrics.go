@@ -1,4 +1,4 @@
-package event
+package types
 
 import (
 	"k8s.io/klog/v2"

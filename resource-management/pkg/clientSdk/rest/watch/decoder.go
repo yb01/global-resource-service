@@ -21,7 +21,6 @@ import (
 	"fmt"
 
 	"global-resource-service/resource-management/pkg/common-lib/types"
-	"global-resource-service/resource-management/pkg/common-lib/types/event"
 )
 
 // Decoder implements the watch.Decoder interface for io.ReadClosers that
@@ -41,15 +40,15 @@ func NewDecoder(decoder *json.Decoder) *Decoder {
 
 // Decode blocks until it can return the next object in the reader. Returns an error
 // if the reader is closed or an object can't be decoded.
-func (d *Decoder) Decode() (event.EventType, *types.LogicalNode, error) {
-	var got event.NodeEvent
+func (d *Decoder) Decode() (types.EventType, *types.LogicalNode, error) {
+	var got types.NodeEvent
 	err := d.decoder.Decode(&got)
 	if err != nil {
 		return "", nil, err
 	}
 
 	switch got.Type {
-	case event.Added, event.Modified, event.Deleted, event.Error, event.Bookmark:
+	case types.Added, types.Modified, types.Deleted, types.Error, types.Bookmark:
 	default:
 		return "", nil, fmt.Errorf("got invalid watch event type: %v", got.Type)
 	}

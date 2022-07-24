@@ -5,17 +5,15 @@ import (
 	"strconv"
 
 	"global-resource-service/resource-management/pkg/common-lib/types"
-	"global-resource-service/resource-management/pkg/common-lib/types/event"
-	"global-resource-service/resource-management/pkg/common-lib/types/location"
 )
 
 // TODO - add more fields for minimal node record
 type ManagedNodeEvent struct {
-	nodeEvent *event.NodeEvent
-	loc       *location.Location
+	nodeEvent *types.NodeEvent
+	loc       *types.Location
 }
 
-func NewManagedNodeEvent(nodeEvent *event.NodeEvent, loc *location.Location) *ManagedNodeEvent {
+func NewManagedNodeEvent(nodeEvent *types.NodeEvent, loc *types.Location) *ManagedNodeEvent {
 	return &ManagedNodeEvent{
 		nodeEvent: nodeEvent,
 		loc:       loc,
@@ -26,7 +24,7 @@ func (n *ManagedNodeEvent) GetId() string {
 	return n.nodeEvent.Node.Id
 }
 
-func (n *ManagedNodeEvent) GetLocation() *location.Location {
+func (n *ManagedNodeEvent) GetLocation() *types.Location {
 	return n.loc
 }
 
@@ -44,11 +42,11 @@ func (n *ManagedNodeEvent) GetResourceVersion() uint64 {
 	return rv
 }
 
-func (n *ManagedNodeEvent) GetEventType() event.EventType {
+func (n *ManagedNodeEvent) GetEventType() types.EventType {
 	return n.nodeEvent.Type
 }
 
-func (n *ManagedNodeEvent) GetNodeEvent() *event.NodeEvent {
+func (n *ManagedNodeEvent) GetNodeEvent() *types.NodeEvent {
 	return n.nodeEvent
 }
 
