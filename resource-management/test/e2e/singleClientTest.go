@@ -209,7 +209,7 @@ func watchNodes(client rmsclient.RmsInterface, clientId string, crv types.Transi
 }
 
 func logIfProlonged(record *types.NodeEvent, t time.Time, ws *stats.WatchStats) {
-	d := t.Sub(record.Node.LastUpdatedTime)
+	d := t.Sub(record.Node.LastUpdatedTime.Time)
 	if d > stats.LongWatchThreshold {
 		klog.Infof("Prolonged watch node from server: %v with time (%v)", record.Node.Id, d)
 		ws.NumberOfProlongedItems++

@@ -36,7 +36,7 @@ func createRandomNode(rv int, loc *Location) *LogicalNode {
 			Region:            RegionName(loc.GetRegion()),
 			ResourcePartition: ResourcePartitionName(loc.GetResourcePartition()),
 		},
-		LastUpdatedTime: time.Now().UTC(),
+		LastUpdatedTime: NewTime(time.Now().UTC()),
 	}
 }
 

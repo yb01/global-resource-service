@@ -2,13 +2,13 @@ package handlers
 
 import (
 	"encoding/json"
-	"global-resource-service/resource-management/pkg/common-lib/types"
 	"net/http"
 
 	"k8s.io/klog/v2"
 
 	"global-resource-service/resource-management/pkg/common-lib/serializer"
-	localJson "global-resource-service/resource-management/pkg/common-lib/serializer/json"
+	"global-resource-service/resource-management/pkg/common-lib/serializer/protobuf"
+	"global-resource-service/resource-management/pkg/common-lib/types"
 	"global-resource-service/resource-management/test/resourceRegionMgrSimulator/data"
 	simulatorTypes "global-resource-service/resource-management/test/resourceRegionMgrSimulator/types"
 )
@@ -21,7 +21,8 @@ type RegionNodeEventHandler struct {
 //
 func NewRegionNodeEventsHander() *RegionNodeEventHandler {
 	return &RegionNodeEventHandler{
-		serializer: localJson.NewSerializer("foo", false),
+		//	serializer: localJson.NewSerializer("foo", false),
+		serializer: protobuf.NewSerializer("foo"),
 	}
 }
 

@@ -175,7 +175,7 @@ func makeDataUpdate(changesThreshold int) {
 				node.ResourceVersion = strconv.FormatUint(currentResourceVersion+1, 10)
 			}
 			// record the time to change resource version in resource partition
-			node.LastUpdatedTime = time.Now().UTC()
+			node.LastUpdatedTime = types.NewTime(time.Now().UTC())
 
 			newEvent := types.NewNodeEvent(node, types.Modified)
 			RegionNodeEventsList[j].NodeEvents[i] = newEvent
@@ -223,6 +223,6 @@ func createRandomNode(rv int, loc *types.Location) *types.LogicalNode {
 		Conditions:      111,
 		Reserved:        false,
 		MachineType:     types.NodeMachineType(id.String() + "-highend"),
-		LastUpdatedTime: time.Now().UTC(),
+		LastUpdatedTime: types.NewTime(time.Now().UTC()),
 	}
 }

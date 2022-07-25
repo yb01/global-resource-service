@@ -97,7 +97,7 @@ type LogicalNode struct {
 	MachineType NodeMachineType `json:"machine_type" protobuf:"bytes,9,opt,name=machine_type"`
 
 	// LastUpdatedTime defines the time when node status was updated in resource partition
-	LastUpdatedTime time.Time `protobuf:"-"` // `json:"last_updated_time" protobuf:"bytes,10,opt,name=last_updated_time"`
+	LastUpdatedTime Time `json:"last_updated_time" protobuf:"bytes,10,opt,name=last_updated_time"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

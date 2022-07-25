@@ -12,7 +12,8 @@ import (
 	distributor "global-resource-service/resource-management/pkg/common-lib/interfaces/distributor"
 	"global-resource-service/resource-management/pkg/common-lib/metrics"
 	"global-resource-service/resource-management/pkg/common-lib/serializer"
-	localJson "global-resource-service/resource-management/pkg/common-lib/serializer/json"
+	//	localJson "global-resource-service/resource-management/pkg/common-lib/serializer/json"
+	"global-resource-service/resource-management/pkg/common-lib/serializer/protobuf"
 	"global-resource-service/resource-management/pkg/common-lib/types"
 )
 
@@ -147,7 +148,9 @@ func (a *Aggregator) initPullOrSubsequentPull(c *ClientOfRRM, batchLength uint64
 		path = httpPrefix + c.BaseURL + "/resources/subsequentpull"
 	}
 
-	serializer := localJson.NewSerializer("foo", false)
+	//  serializer := localJson.NewSerializer("foo", false)
+	serializer := protobuf.NewSerializer("foo")
+
 	bytes, _ := json.Marshal(PullDataFromRRM{BatchLength: batchLength, CRV: crv.Copy()})
 	req, err := http.NewRequest(http.MethodGet, path, strings.NewReader(string(bytes)))
 	if err != nil {
