@@ -81,8 +81,6 @@ func (a *Aggregator) Run() (err error) {
 
 			klog.V(3).Infof("Starting loop pulling nodes from region: %v", a.urls[i])
 			for {
-				time.Sleep(100 * time.Millisecond)
-
 				// Call the Pull methods
 				// when composite RV is nil, the method initPull is called;
 				// otherwise the method subsequentPull is called.
@@ -115,6 +113,9 @@ func (a *Aggregator) Run() (err error) {
 					if eventProcess {
 						a.postCRV(c, crv)
 					}
+				} else {
+					// only wait for empty pulls
+					time.Sleep(100 * time.Millisecond)
 				}
 			}
 		}(i)

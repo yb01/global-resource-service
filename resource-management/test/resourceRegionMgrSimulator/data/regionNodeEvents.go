@@ -99,7 +99,7 @@ func GetRegionNodeModifiedEventsCRV(rvs types.TransitResourceVersionMap) (simula
 			}
 		}
 
-		pulledNodeListEvents[j] = pulledNodeListEventsPerRP
+		pulledNodeListEvents[j].NodeEvents = pulledNodeListEventsPerRP.NodeEvents[0:indexPerRP]
 	}
 
 	klog.V(9).Infof("Total (%v) Modified events are to be pulled", count)
