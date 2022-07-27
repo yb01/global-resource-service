@@ -49,6 +49,7 @@ func NewAggregator(urls []string, EventProcessor distributor.Interface) *Aggrega
 	return &Aggregator{
 		urls:           urls,
 		EventProcessor: EventProcessor,
+		serializer:     protobuf.NewSerializer("foo"),
 	}
 }
 
@@ -148,9 +149,6 @@ func (a *Aggregator) initPullOrSubsequentPull(c *ClientOfRRM, batchLength uint64
 		path = httpPrefix + c.BaseURL + "/resources/subsequentpull"
 	}
 
-	//  serializer := localJson.NewSerializer("foo", false)
-	serializer := protobuf.NewSerializer("foo")
-
 	bytes, _ := json.Marshal(PullDataFromRRM{BatchLength: batchLength, CRV: crv.Copy()})
 	req, err := http.NewRequest(http.MethodGet, path, strings.NewReader(string(bytes)))
 	if err != nil {
@@ -173,7 +171,7 @@ func (a *Aggregator) initPullOrSubsequentPull(c *ClientOfRRM, batchLength uint64
 	}
 
 	var ResponseObject types.ResponseFromRRM
-	_, err1 := serializer.Decode(bodyBytes, &ResponseObject)
+	_, err1 := a.serializer.Decode(bodyBytes, &ResponseObject)
 	if err1 != nil {
 		klog.Errorf("Error decode response body:", err)
 		return nil, 0
