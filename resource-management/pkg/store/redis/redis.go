@@ -23,7 +23,7 @@ type Goredis struct {
 // TODO: with configured parameters for the store
 func NewRedisClient() *Goredis {
 	client := redis.NewClient(&redis.Options{
-		Addr:         "127.0.0.1:6379",
+		Addr:         "localhost:6379",
 		PoolSize:     1000,
 		PoolTimeout:  2 * time.Minute,
 		IdleTimeout:  10 * time.Minute,
