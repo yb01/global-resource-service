@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"k8s.io/klog/v2"
@@ -93,14 +92,8 @@ func (re *RegionNodeEventHandler) SimulatorHandler(rw http.ResponseWriter, r *ht
 			klog.V(6).Infof("Pulling Region Node Event with final batch size (%v) for (%v) RPs", count, len(nodeEvents))
 		}
 
-		b, err := json.Marshal(aggregatorClientReq.CRV)
-		if err != nil {
-			klog.Errorf("Error - Unable to marshal CRV : ", err)
-		}
-
 		response := &types.ResponseFromRRM{
 			RegionNodeEvents: nodeEvents,
-			RvMap:            b,
 			Length:           uint64(count),
 		}
 

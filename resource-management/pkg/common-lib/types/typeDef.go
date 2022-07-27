@@ -110,15 +110,9 @@ type RpNodeEvents struct {
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // RRM: Resource Region Manager
-// TODO: the RvMap is not needed when sending data from the region manager to the aggregator for the pull model, as the
-//       aggegrator assumes all nodes are sent from the CRV speficied in the pull request. in fact, this is ingored in
-//       aggregator code.
 type ResponseFromRRM struct {
 	RegionNodeEvents []RpNodeEvents `json:"region_node_events" protobuf:"bytes,1,rep,name=region_node_events"`
-	// bytes representation of TransitResourceVersionMap
-	// protobuf map key types: https://developers.google.com/protocol-buffers/docs/proto3#maps
-	RvMap  []byte `json:"rvmap" protobuf:"bytes,2,opt,name=rvmap"`
-	Length uint64 `json:"length" protobuf:"varint,3,opt,name=length"`
+	Length           uint64         `json:"length" protobuf:"varint,3,opt,name=length"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
