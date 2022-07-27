@@ -12,7 +12,6 @@ import (
 	distributor "global-resource-service/resource-management/pkg/common-lib/interfaces/distributor"
 	"global-resource-service/resource-management/pkg/common-lib/metrics"
 	"global-resource-service/resource-management/pkg/common-lib/serializer"
-	//	localJson "global-resource-service/resource-management/pkg/common-lib/serializer/json"
 	"global-resource-service/resource-management/pkg/common-lib/serializer/protobuf"
 	"global-resource-service/resource-management/pkg/common-lib/types"
 )

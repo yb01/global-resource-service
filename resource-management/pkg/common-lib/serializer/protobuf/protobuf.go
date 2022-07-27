@@ -100,19 +100,3 @@ func (s *Serializer) Encode(obj interface{}, w io.Writer) error {
 func (s *Serializer) Identifier() serializer.Identifier {
 	return serializerIdentifier
 }
-
-//// LengthDelimitedFramer is exported variable of type lengthDelimitedFramer
-//var LengthDelimitedFramer = lengthDelimitedFramer{}
-//
-//// Provides length delimited frame reader and writer methods
-//type lengthDelimitedFramer struct{}
-//
-//// NewFrameWriter implements stream framing for this serializer
-//func (lengthDelimitedFramer) NewFrameWriter(w io.Writer) io.Writer {
-//	return framer.NewLengthDelimitedFrameWriter(w)
-//}
-//
-//// NewFrameReader implements stream framing for this serializer
-//func (lengthDelimitedFramer) NewFrameReader(r io.ReadCloser) io.ReadCloser {
-//	return framer.NewLengthDelimitedFrameReader(r)
-//}
