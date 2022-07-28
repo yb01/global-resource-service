@@ -107,6 +107,17 @@ func (s *Serializer) Unmarshal(data []byte, into *interface{}) (err error) {
 	return json.Unmarshal(data, into)
 }
 
+func (s *Serializer) Marshal(obj interface{}) (b []byte, err error) {
+	b, err = json.Marshal(obj)
+
+	if err != nil {
+		klog.Errorf("failed to marshal object, error %v", err)
+		return nil, err
+	}
+
+	return b, nil
+}
+
 // Identifier implements serializer.Encoder interface.
 func (s *Serializer) Identifier() serializer.Identifier {
 	return s.identifier

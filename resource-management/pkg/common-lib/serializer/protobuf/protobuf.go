@@ -96,6 +96,17 @@ func (s *Serializer) Encode(obj interface{}, w io.Writer) error {
 	return nil
 }
 
+func (s *Serializer) Marshal(obj interface{}) (b []byte, err error) {
+	b, err = proto.Marshal(obj.(proto.Message))
+
+	if err != nil {
+		klog.Errorf("failed to marshal object, error %v", err)
+		return nil, err
+	}
+
+	return b, nil
+}
+
 // Identifier implements serializer.Encoder interface.
 func (s *Serializer) Identifier() serializer.Identifier {
 	return serializerIdentifier

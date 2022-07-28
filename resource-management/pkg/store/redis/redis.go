@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"global-resource-service/resource-management/pkg/common-lib/serializer"
+	"global-resource-service/resource-management/pkg/common-lib/serializer/protobuf"
 	"time"
 
 	"k8s.io/klog/v2"
@@ -15,8 +17,9 @@ import (
 )
 
 type Goredis struct {
-	client *redis.Client
-	ctx    context.Context
+	client     *redis.Client
+	ctx        context.Context
+	serializer serializer.Serializer
 }
 
 // Initialize Redis Client
@@ -36,8 +39,9 @@ func NewRedisClient() *Goredis {
 	ctx := context.Background()
 
 	return &Goredis{
-		client: client,
-		ctx:    ctx,
+		client:     client,
+		ctx:        ctx,
+		serializer: protobuf.NewSerializer("foo"),
 	}
 }
 
@@ -98,7 +102,7 @@ func (gr *Goredis) PersistNodes(logicalNodes []*types.LogicalNode) bool {
 
 	for _, logicalNode := range logicalNodes {
 		logicalNodeKey := logicalNode.GetKey()
-		logicalNodeBytes, err := json.Marshal(logicalNode)
+		logicalNodeBytes, err := gr.serializer.Marshal(logicalNode)
 
 		if err != nil {
 			klog.Errorf("Error from JSON Marshal for Logical Nodes. error %v", err)
@@ -176,7 +180,7 @@ func (gr *Goredis) GetNodes() []*types.LogicalNode {
 		}
 
 		if err != redis.Nil {
-			err = json.Unmarshal(value, &logicalNode)
+			_, err = gr.serializer.Decode(value, &logicalNode)
 
 			if err != nil {
 				klog.Errorf("Error from JSON Unmarshal for LogicalNode. error %v", err)

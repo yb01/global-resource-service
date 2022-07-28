@@ -64,6 +64,7 @@ type Decoder interface {
 type Serializer interface {
 	Encoder
 	Decoder
+	Marshal(interface{}) ([]byte, error)
 }
 
 // Framer is a factory for creating readers and writers that obey a particular framing pattern.
