@@ -148,9 +148,9 @@ func makeOneRPDown() {
 
 	// Search the nodes in the RP to get the highestRV
 	var highestRVForRP uint64 = 0
-	length := len(eventsPerRP)
+	length := len(eventsPerRP.NodeEvents)
 	for k := 0; k < length; k++ {
-		currentResourceVersion := eventsPerRP[k].Node.GetResourceVersionInt64()
+		currentResourceVersion := eventsPerRP.NodeEvents[k].Node.GetResourceVersionInt64()
 		if highestRVForRP < currentResourceVersion {
 			highestRVForRP = currentResourceVersion
 		}
@@ -161,14 +161,14 @@ func makeOneRPDown() {
 	for i := 0; i < NodesPerRP; i++ {
 
 		// reset the version of node with the current rvToGenerateRPs
-		node := eventsPerRP[i].Node
+		node := eventsPerRP.NodeEvents[i].Node
 		node.ResourceVersion = strconv.FormatUint(rvToGenerateRPs, 10)
 
 		// record the time to change resource version in resource partition
-		node.LastUpdatedTime = time.Now().UTC()
+		node.LastUpdatedTime = types.NewTime(time.Now().UTC())
 
-		newEvent := event.NewNodeEvent(node, event.Modified)
-		RegionNodeEventsList[selectedRP][i] = newEvent
+		newEvent := types.NewNodeEvent(node, types.Modified)
+		RegionNodeEventsList[selectedRP].NodeEvents[i] = newEvent
 
 		rvToGenerateRPs++
 	}
