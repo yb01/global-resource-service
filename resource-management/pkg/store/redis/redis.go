@@ -293,3 +293,16 @@ func (gr *Goredis) UpdateClient(clientId string, client *types.Client) error {
 func (gr *Goredis) GetClients() ([]*types.Client, error) {
 	return nil, fmt.Errorf("not implemented")
 }
+
+func (gr *Goredis) InitNodeIdCache() {
+	klog.Errorf("InitNodeIdCache not implemented")
+}
+
+func (gr *Goredis) GetNodeIdCount() int {
+	klog.Errorf("GetNodeIdCount not implemented")
+	return -1
+}
+
+func (gr *Goredis) SetTestNodeIdMatch(isMatch bool) {
+	klog.Errorf("SetTestNodeIdMatch not implemented")
+}

@@ -22,6 +22,11 @@ type StoreInterface interface {
 	GetClients() ([]*types.Client, error)
 	// UpdateClient will be used with client Add/remove resources
 	UpdateClient(string, *types.Client) error
+
+	// For fake storage test only, no need to implement
+	InitNodeIdCache()
+	GetNodeIdCount() int
+	SetTestNodeIdMatch(isMatch bool)
 }
 
 type NodeStoreStatus struct {
