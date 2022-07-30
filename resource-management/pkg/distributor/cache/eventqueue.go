@@ -13,7 +13,7 @@ import (
 )
 
 // TODO - read from config
-const LengthOfNodeEventQueue = 10000
+const LengthOfNodeEventQueue = 100000
 
 type nodeEventQueueByLoc struct {
 	circularEventQueue []*node.ManagedNodeEvent
@@ -40,6 +40,7 @@ func (qloc *nodeEventQueueByLoc) enqueueEvent(e *node.ManagedNodeEvent) {
 
 	if qloc.endPos == qloc.startPos+LengthOfNodeEventQueue {
 		// cache is full - remove the oldest element
+		klog.Warningf("cache is full")
 		qloc.startPos++
 	}
 
@@ -149,7 +150,7 @@ func (eq *NodeEventQueue) Watch(rvs types.InternalResourceVersionMap, clientWatc
 		return err
 	}
 
-	eq.watchChan = make(chan *types.NodeEvent)
+	eq.watchChan = make(chan *types.NodeEvent, 30)
 	// writing event to channel
 	go func(downstreamCh chan *types.NodeEvent, initEvents []*types.NodeEvent, stopCh chan struct{}, upstreamCh chan *types.NodeEvent) {
 		if downstreamCh == nil {
@@ -201,7 +202,7 @@ func (eq *NodeEventQueue) getAllEventsSinceResourceVersion(rvs types.InternalRes
 		}
 	}
 
-	nodeEvents := make([]*types.NodeEvent, 0)
+	nodeEvents := make([]*types.NodeEvent, 0, 1000)
 	for loc, qByLoc := range eq.eventQueueByLoc {
 		startIndex, isOK := locStartPostitions[loc]
 		var events []*types.NodeEvent
