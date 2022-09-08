@@ -78,8 +78,8 @@ func Run(c *RegionConfig) error {
 	s := &http.Server{
 		Addr:         bindAddress,
 		Handler:      sm,
-		ReadTimeout:  60 * time.Second,
-		WriteTimeout: 60 * time.Second,
+		ReadTimeout:  120 * time.Second, // hack: large time out for listing large amount of nodes without pagenition
+		WriteTimeout: 120 * time.Second,
 	}
 
 	go func() {

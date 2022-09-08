@@ -1,3 +1,21 @@
+/*
+Copyright The Kubernetes Authors.
+Copyright 2022 Authors of Global Resource Service - file modified.
+Copyright 2020 Authors of Arktos - file modified.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package handlers
 
 import (
@@ -50,10 +68,7 @@ func (i *WatchHandler) ResourceHandler(resp http.ResponseWriter, req *http.Reque
 }
 
 func (i *WatchHandler) list(resp http.ResponseWriter, req *http.Request) {
-	var nodeEvents simulatorTypes.RegionNodeEvents
-	var count uint64
-
-	nodeEvents, count = data.GetRegionNodeAddedEvents(0)
+	nodeEvents, count, _ := data.ListNodes()
 
 	if count == 0 {
 		klog.V(6).Info("Pulling Region Node Events with batch is in the end")
@@ -73,9 +88,6 @@ func (i *WatchHandler) list(resp http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		klog.Errorf("Error - Unable to marshal json : ", err)
 	}
-
-	// Process post CRV to discard all old region node modified event
-	//
 }
 
 // simple watch routine
@@ -107,8 +119,7 @@ func (i *WatchHandler) serverWatch(resp http.ResponseWriter, req *http.Request, 
 	// start the watcher
 	klog.V(3).Infof("Start watching distributor for client: %v", clientId)
 
-	// TODO: change this to simulator nod change watch interface
-	//	err = i.dist.Watch(clientId, crvMap, watchCh, stopCh)
+	err = data.Watch(crvMap, watchCh, stopCh)
 	if err != nil {
 		klog.Errorf("unable to start the watch at store. Error %v", err)
 		resp.WriteHeader(http.StatusInternalServerError)
